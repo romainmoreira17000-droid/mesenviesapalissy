@@ -34,6 +34,11 @@ La base Supabase **mesenviesapalissy** est créée et reliée (fichier `config.j
 
 Dans Supabase › SQL Editor › New query, collez le contenu du fichier `supabase-emotions.sql`, puis cliquez sur **Run**. Tant que ce n'est pas fait, les émotions envoyées restent en attente sur la tablette (⏳) et partiront toutes seules ensuite.
 
+### Alertes « un enfant veut parler »
+
+- **Espace animateur ouvert** (téléphone, tablette, ordinateur) : vérification toutes les 15 secondes, avec son, vibration, notification et bandeau rouge. Réglage et test dans l'onglet ⚙️ Aide.
+- **Sur téléphone, même appli fermée** : avec l'appli gratuite **ntfy**. Pour l'activer une fois, collez `supabase-alertes.sql` dans Supabase › SQL Editor, puis Run. Le nom du canal à suivre s'affiche ensuite dans l'onglet ⚙️ Aide. Le message ne contient ni prénom ni émotion.
+
 ## Qui peut faire quoi
 
 | | Enfants et familles | Animateur validé |

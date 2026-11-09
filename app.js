@@ -53,7 +53,7 @@ let votes=[], paroles=[], familles=[], emotions=[], emoReady=true, breathTimer=n
 let config={added:{peri:[],mer:[],midi:[]},hidden:[]};
 const fresh=()=>({emo:null,intensite:null,causes:[],causeAutre:"",parler:null,prenom:"",emoTexte:"",autre:"",choix:[],humeur:null,moment:null,tags:[],texte:"",dessin:null,pmoment:null});
 let s={view:"accueil",classe:null,...fresh()};
-let acc={mode:"login",msg:"",pending:[],team:[]};
+let acc={mode:"login",msg:"",pending:[],team:[],ntfy:null};
 let adm={tab:"res",fm:"all",fc:"all",fp:"all",pt:"all",ft:"all",confirm:false,delp:null,err:"",busy:false};
 let timer=null;
 try{ if(localStorage.getItem("envies-voice")==="off") voice=false; }catch(e){}
@@ -368,8 +368,9 @@ function renderLogin(app){
 }
 async function loadTeam(){
   if(!sb||!session) return;
-  const [p,t]=await Promise.all([sb.rpc("comptes_en_attente"),sb.from("animateurs").select("user_id,email,created_at").order("created_at")]);
-  acc.pending=p.data||[]; acc.team=t.data||[];
+  const [p,t,n]=await Promise.all([sb.rpc("comptes_en_attente"),sb.from("animateurs").select("user_id,email,created_at").order("created_at"),
+    sb.from("alertes_config").select("ntfy_topic,actif").eq("id",1).maybeSingle()]);
+  acc.pending=p.data||[]; acc.team=t.data||[]; acc.ntfy=n.error?null:(n.data||null);
   if(s.view==="adm"&&adm.tab==="set") render();
 }
 async function logout(){ try{await sb?.auth.signOut();}catch(e){} session=null; votes=[]; paroles=[]; familles=[]; emotions=[]; acc.pending=[]; acc.team=[]; loadState="idle"; stopRefresh(); }
@@ -634,6 +635,14 @@ function renderSettings(){
   <div class="panel"><h3>🔔 Alertes « un enfant veut parler »</h3>
     <p class="muted" style="margin:0">Tant que l'espace animateur est ouvert sur cet appareil, il vérifie toutes les 15 secondes : son, vibration et notification dès qu'un enfant demande un animateur.</p>
     <div class="tabs"><button class="btn primary" id="notifOn">Activer les notifications</button><button class="btn" id="notifTest">Tester l'alerte</button></div>
+    <div class="ntfy">${acc.ntfy?.ntfy_topic?`<b>📱 Sur votre téléphone, même quand l'appli est fermée :</b>
+      <ol style="margin:4px 0 0;padding-left:1.2rem">
+        <li>Installez l'appli gratuite <b>ntfy</b> (Play Store ou App Store).</li>
+        <li>Touchez <b>+</b> (s'abonner), puis collez ce nom de canal : <code style="overflow-wrap:anywhere">${esc(acc.ntfy.ntfy_topic)}</code> <button class="btn small" id="copyTopic" data-url="${esc(acc.ntfy.ntfy_topic)}">Copier</button></li>
+        <li>Touchez <b>Tester l'alerte téléphone</b> ci-dessous pour vérifier.</li></ol>
+      <small class="muted">Gardez ce nom de canal pour l'équipe : toute personne qui le connaît reçoit les alertes. Le message ne contient ni prénom ni émotion, seulement la classe.</small>
+      <div><button class="btn" id="ntfyTest" data-topic="${esc(acc.ntfy.ntfy_topic)}">Tester l'alerte téléphone</button></div>`
+      :`<small class="muted">📱 Alertes sur téléphone (appli fermée) : pas encore activées dans la base de données (fichier <code>supabase-alertes.sql</code>, voir le README).</small>`}</div>
     <small class="muted">${"Notification" in window?{granted:"✅ Notifications autorisées sur cet appareil.",denied:"⛔ Notifications bloquées : autorisez-les dans les réglages du navigateur pour ce site.",default:"Notifications pas encore autorisées sur cet appareil."}[Notification.permission]:"Ce navigateur ne gère pas les notifications : le son et le bandeau rouge restent actifs."} Sur iPhone/iPad, ajoutez d'abord l'appli à l'écran d'accueil.</small></div>
   <div class="panel"><h3>👥 Comptes animateurs</h3>
     <p class="muted" style="margin:0">Un collègue crée son compte avec « Pas encore de compte ? » sur l'écran de connexion, puis tu le valides ici. Seuls les comptes validés voient les réponses.</p>
@@ -690,6 +699,9 @@ document.addEventListener("click",e=>{
   if(t.id==="switchMode"){ acc.mode=acc.mode==="signup"?"login":"signup"; adm.err=""; acc.msg=""; render(); return; }
   if(d.valider){ sb.rpc("valider_animateur",{uid:d.valider}).then(({error})=>{toast(error?"Validation impossible.":"Compte validé.");loadTeam();}); return; }
   if(d.refuser){ sb.rpc("refuser_compte",{uid:d.refuser}).then(({error})=>{toast(error?"Refus impossible.":"Compte supprimé.");loadTeam();}); return; }
+  if(t.id==="copyTopic"){ navigator.clipboard?.writeText(d.url).then(()=>toast("Nom du canal copié."),()=>toast("Copie impossible : sélectionnez le nom à la main.")); return; }
+  if(t.id==="ntfyTest"){ fetch("https://ntfy.sh/"+encodeURIComponent(d.topic),{method:"POST",body:"Test : les alertes « un enfant veut parler » arrivent bien sur ce téléphone.",headers:{Title:"Mes envies : test d'alerte",Tags:"white_check_mark"}})
+      .then(r=>toast(r.ok?"Alerte de test envoyée : regardez votre téléphone.":"Envoi impossible."),()=>toast("Envoi impossible : vérifiez la connexion.")); return; }
   if(t.id==="notifOn"){ unlockAlerts(); try{ Notification.requestPermission().then(()=>render()); }catch(e){ toast("Ce navigateur ne gère pas les notifications."); } return; }
   if(t.id==="notifTest"){ unlockAlerts(); setTimeout(()=>alertAnim([{id:"test"+Date.now(),classe:"GS",emotion:"tristesse",prenom:"Test"}]),300); return; }
   if(t.id==="savePass"){ const v=$("#newpass").value; if(v.length<8){toast("8 caractères minimum.");return;}
