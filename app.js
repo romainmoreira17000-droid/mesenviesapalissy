@@ -46,7 +46,7 @@ let voice=true, pen=PENS[0], session=null;
 let votes=[], paroles=[], familles=[], loadState="idle", lastLoad=0, refreshTimer=null;
 let config={added:{peri:[],mer:[],midi:[]},hidden:[]};
 const fresh=()=>({choix:[],humeur:null,moment:null,tags:[],texte:"",dessin:null,pmoment:null});
-let s={view:"classe",classe:null,...fresh()};
+let s={view:"accueil",classe:null,...fresh()};
 let acc={mode:"login",msg:"",pending:[],team:[]};
 let adm={tab:"res",fm:"all",fc:"all",fp:"all",pt:"all",ft:"all",confirm:false,delp:null,err:"",busy:false};
 let timer=null;
@@ -101,6 +101,15 @@ function render(){
   if(PTYPES[s.view]) crumbs.push(`<span class="chip">${PTYPES[s.view].pic} ${esc(PTYPES[s.view].lbl)}</span>`);
   const cr=crumbs.length&&s.view!=="merci"?`<div class="crumbs">${crumbs.join("")}</div>`:"";
 
+  if(s.view==="accueil"){
+    app.innerHTML=`<div class="wrap">
+      ${q("Bonjour ! Qui es-tu ?")}
+      <div class="grid choose">
+        <button class="big who kids" data-go="classe"><span class="pic" aria-hidden="true">🧒</span><span class="lbl">Enfants</span><span class="sub">Je donne mes envies et mes idées</span></button>
+        <a class="big who fams" href="familles.html?app"><span class="pic" aria-hidden="true">👨‍👩‍👧</span><span class="lbl">Familles</span><span class="sub">Parents : votre avis sur le centre</span></a>
+      </div></div>`;
+    return;
+  }
   if(s.view==="classe"){
     const btn=c=>`<button class="big ${c.cyc}" data-classe="${c.id}"><span class="lbl">${c.id}</span><span class="sub">${c.sub}</span></button>`;
     app.innerHTML=`<div class="wrap">
@@ -109,7 +118,7 @@ function render(){
       <div class="grid classes">${CLASSES.filter(c=>c.cyc==="mat").map(btn).join("")}</div>
       <div class="cycle-title">Élémentaire</div>
       <div class="grid classes">${CLASSES.filter(c=>c.cyc==="elem").map(btn).join("")}</div>
-      <div class="homefam"><a class="back" href="familles.html?app">👪 Espace familles</a></div></div>`;
+      <div class="bar"><button class="back" data-go="accueil">← Accueil</button></div></div>`;
   }
   else if(s.view==="hub"){
     const door=(cls,go,pic,lbl,sub)=>`<button class="big door ${cls}" data-go="${go}"><span class="pic" aria-hidden="true">${pic}</span><span class="lbl">${lbl}</span><span class="sub">${sub}</span></button>`;
@@ -180,12 +189,12 @@ function setupCanvas(){
   cv.addEventListener("pointerup",end); cv.addEventListener("pointercancel",end); cv.addEventListener("pointerleave",end);
 }
 
-const SPEAK={classe:"Tu es dans quelle classe ?",hub:"Qu'est-ce que tu veux faire ? Mes envies d'activités, j'améliore le centre, j'aimerais découvrir, ou je m'exprime.",
+const SPEAK={accueil:"Bonjour ! Qui es-tu ? Enfants, ou familles ?",classe:"Tu es dans quelle classe ?",hub:"Qu'est-ce que tu veux faire ? Mes envies d'activités, j'améliore le centre, j'aimerais découvrir, ou je m'exprime.",
   moment:"C'est pour quel moment ?",choix:"Qu'est-ce que tu as envie de faire ? Choisis jusqu'à trois activités.",humeur:"Tu aimes venir au centre ?",
   ameliorer:"Qu'est-ce que tu changerais au centre ?",explorer:"Qu'est-ce que tu aimerais découvrir ?",libre:"Dis ou dessine ce que tu veux !",merci:"Merci ! C'est bien arrivé."};
 function go(view){
   clearTimeout(timer);
-  if(view==="classe") s={view:"classe",classe:null,...fresh()};
+  if(view==="classe"||view==="accueil") s={view,classe:null,...fresh()};
   if(view==="hub") Object.assign(s,fresh());
   if(PTYPES[view]&&s.view==="hub") Object.assign(s,fresh());
   s.view=view; render(); window.scrollTo({top:0});
@@ -313,7 +322,7 @@ function renderAdmin(app){
   const tabs=`<div class="adminbar"><div class="tabs">
     <button class="chip" data-tab="res" aria-pressed="${adm.tab==="res"}">📊 Envies d'activités</button>
     <button class="chip" data-tab="par" aria-pressed="${adm.tab==="par"}">💬 Paroles des enfants</button>
-    <button class="chip" data-tab="fam" aria-pressed="${adm.tab==="fam"}">👪 Familles</button>
+    <button class="chip" data-tab="fam" aria-pressed="${adm.tab==="fam"}">👨‍👩‍👧 Familles</button>
     <button class="chip" data-tab="acts" aria-pressed="${adm.tab==="acts"}">🧩 Activités proposées</button>
     <button class="chip" data-tab="set" aria-pressed="${adm.tab==="set"}">⚙️ Aide</button></div>
     <div class="tabs"><span class="muted" style="font-size:.85rem;align-self:center">Mis à jour à ${upd}</span><button class="chip" id="refresh">↻ Actualiser</button><button class="chip" id="logout">Se déconnecter</button></div></div>`;
@@ -431,7 +440,7 @@ function renderActsAdmin(){
 }
 function renderSettings(){
   const famUrl=new URL("familles.html",location.href).href;
-  return `<div class="panel"><h3>👪 Lien de l'espace familles</h3>
+  return `<div class="panel"><h3>👨‍👩‍👧 Lien de l'espace familles</h3>
     <p class="muted" style="margin:0">À envoyer aux parents (mail, ENT, affiche). Ils répondent depuis leur téléphone, sans compte.</p>
     <div class="famlink"><img class="qr" src="qr-familles.svg" alt="QR code de l'espace familles"><div style="display:flex;flex-direction:column;gap:8px;min-width:0">
       <code style="overflow-wrap:anywhere">${esc(famUrl)}</code><div class="tabs"><button class="btn" id="copyFam" data-url="${esc(famUrl)}">Copier le lien</button><a class="btn" href="familles.html" target="_blank" rel="noopener">Ouvrir</a></div>
@@ -485,8 +494,8 @@ document.addEventListener("click",e=>{
   const t=e.target.closest("button,[data-toggle]"); if(!t) return;
   const d=t.dataset;
   if(t.id==="voiceBtn"){voice=!voice;try{localStorage.setItem("envies-voice",voice?"on":"off")}catch(_){ } if(!voice)try{speechSynthesis.cancel()}catch(_){ } render();return;}
-  if(t.id==="adultBtn"){ if(s.view.startsWith("adm")){ logout(); go("classe"); } else {adm.err="";acc.msg="";acc.mode="login";s.view="adm-login";render();} return;}
-  if(t.id==="logout"){ logout(); go("classe"); toast("Déconnecté."); return; }
+  if(t.id==="adultBtn"){ if(s.view.startsWith("adm")){ logout(); go("accueil"); } else {adm.err="";acc.msg="";acc.mode="login";s.view="adm-login";render();} return;}
+  if(t.id==="logout"){ logout(); go("accueil"); toast("Déconnecté."); return; }
   if(t.id==="refresh"){ loadAll(); loadTeam(); return; }
   if(t.id==="switchMode"){ acc.mode=acc.mode==="signup"?"login":"signup"; adm.err=""; acc.msg=""; render(); return; }
   if(d.valider){ sb.rpc("valider_animateur",{uid:d.valider}).then(({error})=>{toast(error?"Validation impossible.":"Compte validé.");loadTeam();}); return; }

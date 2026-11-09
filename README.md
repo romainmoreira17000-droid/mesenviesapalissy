@@ -11,7 +11,7 @@ Après avoir choisi sa classe, l'enfant a 4 portes :
 
 Le bouton 🔊 lit les questions à voix haute pour les maternelles. Les réponses sont **anonymes**.
 
-**Espace familles** (`familles.html`) : les parents répondent depuis leur téléphone, sans compte, à un questionnaire de satisfaction, proposent des améliorations et des idées, ou s'expriment librement. On y accède par le bouton « 👪 Espace familles » de l'accueil, ou par son lien direct (et le QR code `qr-familles.svg`) à envoyer aux familles :
+**Espace familles** (`familles.html`) : les parents répondent depuis leur téléphone, sans compte, à un questionnaire de satisfaction, proposent des améliorations et des idées, ou s'expriment librement. On y accède par le bouton « 👨‍👩‍👧 Espace familles » de l'accueil, ou par son lien direct (et le QR code `qr-familles.svg`) à envoyer aux familles :
 https://romainmoreira17000-droid.github.io/mesenviesapalissy/familles.html
 
 Les animateurs se connectent dans **Espace animateur** pour voir les résultats, filtrer par moment, classe et période, et gérer la liste des activités.

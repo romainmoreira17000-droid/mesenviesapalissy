@@ -31,7 +31,7 @@ function render(){
         ${door("amelioration","ame","Vos propositions, vos idées d'activités")}
         ${door("libre","lib","Dites-nous ce que vous voulez")}
       </div>
-      ${document.referrer.includes("index.html")||new URLSearchParams(location.search).has("app")?`<div><a class="back" href="index.html">← Retour à l'appli des enfants</a></div>`:""}</div>`;
+      ${document.referrer.includes("index.html")||new URLSearchParams(location.search).has("app")?`<div><a class="back" href="index.html">← Accueil (Enfants / Familles)</a></div>`:""}</div>`;
     return;
   }
   if(view==="merci"){
