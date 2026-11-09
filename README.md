@@ -8,6 +8,7 @@ Après avoir choisi sa classe, l'enfant a 4 portes :
 - 🔧 **J'améliore le centre** : ce que l'enfant changerait (images, moment concerné, explication)
 - 🧭 **J'aimerais découvrir** : ce que l'enfant voudrait essayer
 - 💬 **Je m'exprime** : un dessin au doigt et/ou un texte libre
+- 😊 **Mes émotions** : comment je me sens (8 émotions, un peu ou beaucoup), à cause de quoi, et « je veux en parler à un animateur » (prénom facultatif, effacé quand l'animateur clique « C'est fait »). Après une émotion difficile, exercice de respiration avec le renard.
 
 Le bouton 🔊 lit les questions à voix haute pour les maternelles. Les réponses sont **anonymes**.
 
@@ -28,6 +29,10 @@ La base Supabase **mesenviesapalissy** est créée et reliée (fichier `config.j
 2. **Se connecter** : Espace animateur, puis l'e-mail et le mot de passe provisoire. Changez ensuite le mot de passe dans l'onglet ⚙️ Aide.
 3. **Ajouter un collègue** : il touche « Pas encore de compte ? Créer mon compte » sur l'écran de connexion, puis un animateur valide son compte dans l'onglet ⚙️ Aide. Tant qu'un compte n'est pas validé, il ne voit aucune réponse.
 4. Sur la tablette, ouvrez l'adresse de l'appli puis « Ajouter à l'écran d'accueil ».
+
+### Activer l'espace émotions (une fois)
+
+Dans Supabase › SQL Editor › New query, collez le contenu du fichier `supabase-emotions.sql`, puis cliquez sur **Run**. Tant que ce n'est pas fait, les émotions envoyées restent en attente sur la tablette (⏳) et partiront toutes seules ensuite.
 
 ## Qui peut faire quoi
 

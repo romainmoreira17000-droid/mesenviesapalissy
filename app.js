@@ -34,6 +34,12 @@ const PTYPES={
   ameliorer:{lbl:"J'améliore le centre",pic:"🔧",cls:"ame",col:"var(--peri)",q:"Qu'est-ce que tu changerais au centre ?",tags:AMELIO,ph:"Par exemple : avoir plus de ballons dans la cour",sub:"Ce que je changerais"},
   explorer:{lbl:"J'aimerais découvrir",pic:"🧭",cls:"exp",col:"var(--mer)",q:"Qu'est-ce que tu aimerais découvrir ?",tags:EXPLO,ph:"Par exemple : apprendre des tours de magie",sub:"Des choses nouvelles à essayer"},
   libre:{lbl:"Je m'exprime",pic:"💬",cls:"lib",col:"var(--midi)",q:"Dis ou dessine ce que tu veux !",tags:null,ph:"Écris ici ce que tu as envie de dire",sub:"Dire ou dessiner ce que je veux"}};
+const EMOS=[["joie","😄","La joie","#FFE58A"],["calme","😌","Le calme","#BFF0E0"],["fierte","🤩","La fierté","#FFD0A0"],["surprise","😮","La surprise","#E3D4FF"],
+  ["fatigue","😴","La fatigue","#D8E3EE"],["tristesse","😢","La tristesse","#C9E2FF"],["colere","😠","La colère","#FFC4C4"],["peur","😨","La peur","#DCCCF2"]];
+const EMO_POS=["joie","calme","fierte","surprise"];
+const emoById=id=>EMOS.find(e=>e[0]===id)||[id,"❔",id,"#eee"];
+const CAUSES=[["copains","🤝","Les copains"],["jeu","🎲","Un jeu"],["activite","🎨","Une activité"],["cantine","🍽️","La cantine"],["ecole","🏫","L'école"],
+  ["maison","🏠","La maison"],["adulte","🧑","Un adulte"],["sais","🤷","Je ne sais pas"],["autre","➕","Autre chose"]];
 const PENS=["#1F2B3A","#E53935","#FB8C00","#FDD835","#43A047","#1E88E5","#8E24AA","#8D6E63"];
 
 /* ---------------- Connexion Supabase ---------------- */
@@ -43,9 +49,9 @@ const sb=configured?window.supabase.createClient(CFG.supabaseUrl,CFG.supabaseKey
 
 /* ---------------- État ---------------- */
 let voice=true, pen=PENS[0], session=null;
-let votes=[], paroles=[], familles=[], loadState="idle", lastLoad=0, refreshTimer=null;
+let votes=[], paroles=[], familles=[], emotions=[], emoReady=true, breathTimer=null, loadState="idle", lastLoad=0, refreshTimer=null;
 let config={added:{peri:[],mer:[],midi:[]},hidden:[]};
-const fresh=()=>({autre:"",choix:[],humeur:null,moment:null,tags:[],texte:"",dessin:null,pmoment:null});
+const fresh=()=>({emo:null,intensite:null,causes:[],causeAutre:"",parler:null,prenom:"",emoTexte:"",autre:"",choix:[],humeur:null,moment:null,tags:[],texte:"",dessin:null,pmoment:null});
 let s={view:"accueil",classe:null,...fresh()};
 let acc={mode:"login",msg:"",pending:[],team:[]};
 let adm={tab:"res",fm:"all",fc:"all",fp:"all",pt:"all",ft:"all",confirm:false,delp:null,err:"",busy:false};
@@ -72,6 +78,7 @@ const cycleOf=c=>CLASSES.find(x=>x.id===c)?.cyc;
 function readQueue(){try{return JSON.parse(localStorage.getItem("envies-queue")||"[]");}catch(e){return [];}}
 function writeQueue(q){try{localStorage.setItem("envies-queue",JSON.stringify(q));return true;}catch(e){return false;}}
 function showQueue(){const n=readQueue().length,c=$("#queueChip"); c.hidden=!n; c.textContent=`⏳ ${n} en attente d'envoi`; c.title="Ces réponses partiront dès que la connexion revient.";}
+const tableMissing=err=>err?.code==="PGRST205"||err?.code==="42P01"||/schema cache|does not exist/i.test(err?.message||"");
 const isNetworkError=err=>!navigator.onLine||!err?.code&&/fetch|network|load failed|timeout/i.test(err?.message||"");
 let flushing=false;
 async function flushQueue(){
@@ -81,7 +88,7 @@ async function flushQueue(){
     while(q.length){
       const {table,row}=q[0];
       const {error}=await sb.from(table).insert(row);
-      if(error&&isNetworkError(error)) break;
+      if(error&&(isNetworkError(error)||tableMissing(error))) break;
       q.shift(); writeQueue(q);           // envoyé, ou refusé définitivement : on le retire
     }
   }finally{flushing=false; showQueue();}
@@ -121,8 +128,8 @@ function fox(pose="wave",cls="fox"){
     <ellipse cx="80" cy="220" rx="17" ry="10" fill="${B}"/><ellipse cx="120" cy="220" rx="17" ry="10" fill="${B}"/>
     ${head}</svg>`;
 }
-const STEP={classe:1,hub:2,moment:3,ameliorer:3,explorer:3,libre:3,choix:4,humeur:4};
-const BACK={classe:"accueil",hub:"classe",moment:"hub",choix:"moment",humeur:"choix",ameliorer:"hub",explorer:"hub",libre:"hub"};
+const STEP={emo:3,emo2:4,classe:1,hub:2,moment:3,ameliorer:3,explorer:3,libre:3,choix:4,humeur:4};
+const BACK={emo:"hub",emo2:"emo",classe:"accueil",hub:"classe",moment:"hub",choix:"moment",humeur:"choix",ameliorer:"hub",explorer:"hub",libre:"hub"};
 function nav(){
   const n=STEP[s.view]||1;
   const dots=[1,2,3,4].map(i=>`<i class="${i<=n?"on":""}"></i>`).join("<b></b>");
@@ -161,6 +168,7 @@ function render(){
     app.innerHTML=`<div class="wrap kid">${nav()}${q("Qu'est-ce que tu veux faire ?","",null,true)}
       <div class="grid hub">
         ${door("env","moment","🎯","Mes envies d'activités","Choisir ce que j'ai envie de faire")}
+        ${door("emo","emo","😊","Mes émotions","Comment je me sens aujourd'hui")}
         ${Object.entries(PTYPES).map(([k,p])=>door(p.cls,k,p.pic,p.lbl,p.sub)).join("")}
       </div></div>`;
   }
@@ -181,6 +189,30 @@ function render(){
         <button class="go" data-go="humeur" ${n?"":"disabled"}>J'ai fini ! ✓</button></div></div>`;
   }
   if(s.view==="choix"&&$("#autreTxt")) $("#autreTxt").addEventListener("input",e=>s.autre=e.target.value);
+  if(s.view==="emo"){
+    app.innerHTML=`<div class="wrap kid">${nav()}${q("Comment tu te sens ?","Touche l'émotion qui te ressemble.")}
+      <div class="grid emos">${EMOS.map(([id,e,l,c])=>`<button class="big emocard" data-emo="${id}" aria-pressed="${s.emo===id}" style="--emo:${c}"><span class="badge" aria-hidden="true">✓</span><span class="pic" aria-hidden="true">${e}</span><span class="name">${l}</span></button>`).join("")}</div>
+      ${s.emo?`<div class="idea"><span class="lab">Un peu ou beaucoup ?</span><div class="grid inten">
+        <button class="big tag" data-int="1" aria-pressed="${s.intensite===1}"><span class="badge" aria-hidden="true">✓</span><span class="pic" aria-hidden="true" style="font-size:2rem">${emoById(s.emo)[1]}</span><span class="name">Un peu</span></button>
+        <button class="big tag" data-int="2" aria-pressed="${s.intensite===2}"><span class="badge" aria-hidden="true">✓</span><span class="pic" aria-hidden="true" style="font-size:3.6rem">${emoById(s.emo)[1]}</span><span class="name">Beaucoup</span></button></div></div>`:""}
+      <div class="bar"><button class="back" data-go="hub">← Retour</button><button class="go" data-go="emo2" ${s.emo?"":"disabled"}>Suivant →</button></div></div>`;
+    return;
+  }
+  if(s.view==="emo2"){
+    const [,e,l]=emoById(s.emo);
+    app.innerHTML=`<div class="wrap kid">${nav()}${q("C'est à cause de quoi ?","Tu peux passer cette question.",e)}
+      <div class="grid tags">${CAUSES.map(([id,ic,lb])=>`<button class="big tag" data-cause="${id}" aria-pressed="${s.causes.includes(id)}"><span class="badge" aria-hidden="true">✓</span><span class="pic" aria-hidden="true">${ic}</span><span class="name">${lb}</span></button>`).join("")}</div>
+      ${s.causes.includes("autre")?`<div class="idea"><label for="causeAutre">➕ C'est quoi ?</label><small>Un grand peut l'écrire pour toi.</small><input id="causeAutre" maxlength="120" value="${esc(s.causeAutre)}" style="font-size:1.2rem"></div>`:""}
+      <div class="idea"><span class="lab">🙋 Tu veux en parler à un animateur ?</span>
+        <div class="grid inten"><button class="big tag" data-parler="oui" aria-pressed="${s.parler===true}"><span class="badge" aria-hidden="true">✓</span><span class="pic" aria-hidden="true">🙋</span><span class="name">Oui</span></button>
+        <button class="big tag" data-parler="non" aria-pressed="${s.parler===false}"><span class="badge" aria-hidden="true">✓</span><span class="pic" aria-hidden="true">👍</span><span class="name">Non, ça va</span></button></div>
+        ${s.parler===true?`<label for="prenom" style="margin-top:8px">Ton prénom</label><small>Pour qu'un animateur vienne te voir. Seuls les animateurs le verront.</small><input id="prenom" maxlength="40" autocomplete="off" value="${esc(s.prenom)}" style="font-size:1.2rem">`:""}</div>
+      <div class="idea"><label for="emoTexte">✏️ Tu veux dire autre chose ? <span class="muted" style="font-weight:400">(facultatif)</span></label><small>Un grand peut l'écrire pour toi.</small>
+        <textarea id="emoTexte" maxlength="300" style="min-height:80px">${esc(s.emoTexte)}</textarea></div>
+      <div class="bar"><button class="back" data-go="emo">← Retour</button><button class="go" id="sendEmo">Envoyer 💌</button></div></div>`;
+    [["causeAutre","causeAutre"],["prenom","prenom"],["emoTexte","emoTexte"]].forEach(([id,k])=>{const el=$("#"+id); if(el) el.addEventListener("input",ev=>s[k]=ev.target.value);});
+    return;
+  }
   if(s.view==="humeur"){
     app.innerHTML=`<div class="wrap kid">${nav()}${q("Tu aimes venir au centre ?","Tu peux aussi passer cette question.")}
       <div class="grid moods">${MOODS.map(m=>`<button class="big mood" data-mood="${m.id}" aria-pressed="${s.humeur===m.id}"><span class="pic" aria-hidden="true">${m.pic}</span><span class="name">${m.lbl}</span></button>`).join("")}</div>
@@ -202,6 +234,16 @@ function render(){
       <div class="bar"><button class="back" data-go="hub">← Retour</button><button class="go" id="sendP">Envoyer 🚀</button></div></div>`;
     $("#texte").addEventListener("input",e=>s.texte=e.target.value);
     if(t==="libre") setupCanvas();
+  }
+  else if(s.view==="merci"&&s.emo){
+    const neg=!EMO_POS.includes(s.emo);
+    app.innerHTML=`<div class="wrap kid"><div class="merci">
+      <div class="bravo"><h2>Merci !</h2><p>Merci de nous avoir dit<br>comment tu te sens.</p>
+        ${neg?`<p class="soft">Ce que tu ressens est important.<br>${s.parler&&s.prenom.trim()?"Un animateur va venir te voir.":"Les animateurs sont là pour toi : va les voir quand tu veux."}</p>`:""}</div>
+      ${neg?`<div class="breathe" id="breatheBox"><div class="bubble"><span id="breatheTxt">Prêt ?</span></div>
+        <button class="home-btn" id="breathe">🦊 Respire avec le renard</button></div>`:fox("cheer")}
+      <button class="home-btn" data-go="accueil">🏠 Retour à l'accueil</button>
+      <button class="later" data-go="hub">Encore une idée ? Continuer en ${esc(s.classe||"")} →</button></div></div>`;
   }
   else if(s.view==="merci"){
     const flags=["#FF5C8A","#FFC93C","#4FD18B","#5AA8FF","#B58CFF"];
@@ -232,16 +274,17 @@ function setupCanvas(){
   cv.addEventListener("pointerup",end); cv.addEventListener("pointercancel",end); cv.addEventListener("pointerleave",end);
 }
 
-const SPEAK={accueil:"Bonjour ! Qui es-tu ? Enfants, ou familles ?",classe:"Tu es dans quelle classe ?",hub:"Qu'est-ce que tu veux faire ? Mes envies d'activités, j'améliore le centre, j'aimerais découvrir, ou je m'exprime.",
+const SPEAK={emo:"Comment tu te sens ? Touche l'émotion qui te ressemble.",emo2:"C'est à cause de quoi ? Et tu veux en parler à un animateur ?",accueil:"Bonjour ! Qui es-tu ? Enfants, ou familles ?",classe:"Tu es dans quelle classe ?",hub:"Qu'est-ce que tu veux faire ? Mes envies d'activités, mes émotions, j'améliore le centre, j'aimerais découvrir, ou je m'exprime.",
   moment:"C'est pour quel moment ?",choix:"Qu'est-ce que tu as envie de faire ? Choisis jusqu'à trois activités.",humeur:"Tu aimes venir au centre ?",
   ameliorer:"Qu'est-ce que tu changerais au centre ?",explorer:"Qu'est-ce que tu aimerais découvrir ?",libre:"Dis ou dessine ce que tu veux !",merci:"Bravo ! C'est bien arrivé chez les animateurs !"};
 function go(view){
-  clearTimeout(timer);
+  clearTimeout(timer); clearInterval(breathTimer); breathTimer=null;
   if(view==="classe"||view==="accueil") s={view,classe:null,...fresh()};
   if(view==="hub") Object.assign(s,fresh());
   if(PTYPES[view]&&s.view==="hub") Object.assign(s,fresh());
   s.view=view; render(); window.scrollTo({top:0});
-  if(SPEAK[view]) say(SPEAK[view]);
+  const t=view==="merci"&&s.emo?(EMO_POS.includes(s.emo)?"Merci de nous avoir dit comment tu te sens !":"Merci de nous avoir dit comment tu te sens. Ce que tu ressens est important. Les animateurs sont là pour toi."):SPEAK[view];
+  if(t) say(t);
 }
 
 async function save(table,row,btn){
@@ -251,7 +294,7 @@ async function save(table,row,btn){
   else{
     const {error}=await sb.from(table).insert(row);
     if(error){
-      if(isNetworkError(error)) queued=true;
+      if(isNetworkError(error)||tableMissing(error)) queued=true;
       else{ btn.disabled=false; btn.textContent=label; console.error(error); toast("L'envoi a été refusé. Préviens un animateur."); return; }
     }
   }
@@ -261,10 +304,25 @@ async function save(table,row,btn){
     showQueue();
   }
   go("merci");
-  timer=setTimeout(()=>{ if(s.view==="merci") go("hub"); },7000);
+  if(!(s.emo&&!EMO_POS.includes(s.emo))) timer=setTimeout(()=>{ if(s.view==="merci") go("hub"); },s.emo?10000:7000);
 }
 function sendEnvies(){
   save("envies",{classe:s.classe,cycle:cycleOf(s.classe),moment:s.moment,activites:s.choix.slice(),humeur:s.humeur||null,autre:s.choix.some(id=>id.endsWith(":autre"))?(s.autre||"").trim().slice(0,200):""},$("#send"));
+}
+function sendEmotion(){
+  const parler=s.parler===true;
+  save("emotions",{classe:s.classe,cycle:cycleOf(s.classe),emotion:s.emo,intensite:s.intensite,causes:s.causes.slice(),
+    cause_autre:s.causes.includes("autre")?(s.causeAutre||"").trim().slice(0,120):"",parler,prenom:parler?(s.prenom||"").trim().slice(0,40):"",
+    texte:(s.emoTexte||"").trim().slice(0,300)},$("#sendEmo"));
+}
+function startBreathing(){
+  const box=$("#breatheBox"),txt=$("#breatheTxt"); if(!box) return;
+  clearInterval(breathTimer); let n=0;
+  const step=()=>{ if(!$("#breatheBox")){clearInterval(breathTimer);return;}
+    const inhale=n%2===0; box.classList.toggle("in",inhale); box.classList.toggle("out",!inhale);
+    txt.textContent=n>=10?"Bravo !":inhale?"Inspire…":"Souffle…"; say(n>=10?"Bravo, tu as bien respiré.":inhale?"Inspire":"Souffle");
+    if(n>=10){clearInterval(breathTimer);box.classList.remove("in","out");} n++; };
+  step(); breathTimer=setInterval(step,4000);
 }
 function sendParole(){
   const t=s.view, txt=(s.texte||"").trim();
@@ -314,7 +372,7 @@ async function loadTeam(){
   acc.pending=p.data||[]; acc.team=t.data||[];
   if(s.view==="adm"&&adm.tab==="set") render();
 }
-async function logout(){ try{await sb?.auth.signOut();}catch(e){} session=null; votes=[]; paroles=[]; familles=[]; acc.pending=[]; acc.team=[]; loadState="idle"; stopRefresh(); }
+async function logout(){ try{await sb?.auth.signOut();}catch(e){} session=null; votes=[]; paroles=[]; familles=[]; emotions=[]; acc.pending=[]; acc.team=[]; loadState="idle"; stopRefresh(); }
 
 /* ---------------- Lecture des réponses ---------------- */
 async function fetchAll(table){
@@ -331,7 +389,8 @@ async function loadAll(){
   if(loadState!=="ok") loadState="loading";
   if(s.view==="adm") render();
   try{
-    [votes,paroles,familles]=await Promise.all([fetchAll("envies"),fetchAll("paroles"),fetchAll("familles")]);
+    [votes,paroles,familles,emotions]=await Promise.all([fetchAll("envies"),fetchAll("paroles"),fetchAll("familles"),
+      fetchAll("emotions").then(r=>{emoReady=true;return r;},e=>{console.warn(e);emoReady=false;return [];})]);
     loadState="ok"; lastLoad=Date.now();
   }catch(e){ console.error(e); loadState="err"; }
   if(s.view==="adm") render();
@@ -365,6 +424,7 @@ function renderAdmin(app){
   const tabs=`<div class="adminbar"><div class="tabs">
     <button class="chip" data-tab="res" aria-pressed="${adm.tab==="res"}">📊 Envies d'activités</button>
     <button class="chip" data-tab="par" aria-pressed="${adm.tab==="par"}">💬 Paroles des enfants</button>
+    <button class="chip" data-tab="emo" aria-pressed="${adm.tab==="emo"}">😊 Émotions${(()=>{const n=emotions.filter(e=>e.parler&&!e.traite).length;return n?` <span class="pill" style="background:#FF5C5C;color:#fff">${n}</span>`:"";})()}</button>
     <button class="chip" data-tab="fam" aria-pressed="${adm.tab==="fam"}">👨‍👩‍👧 Familles</button>
     <button class="chip" data-tab="acts" aria-pressed="${adm.tab==="acts"}">🧩 Activités proposées</button>
     <button class="chip" data-tab="set" aria-pressed="${adm.tab==="set"}">⚙️ Aide</button></div>
@@ -373,6 +433,7 @@ function renderAdmin(app){
   if(adm.tab==="set") return app.innerHTML=`<div class="wrap">${tabs}${renderSettings()}</div>`;
   if(adm.tab==="par") return app.innerHTML=`<div class="wrap">${tabs}${renderParoles()}</div>`;
   if(adm.tab==="fam") return app.innerHTML=`<div class="wrap">${tabs}${renderFamilles()}</div>`;
+  if(adm.tab==="emo") return app.innerHTML=`<div class="wrap">${tabs}${renderEmotions()}</div>`;
 
   const filters=`<div class="filters"><label>Moment ${sel("fm",adm.fm,[["all","Tous les moments"],...MOMENTS.map(m=>[m.id,m.lbl])])}</label>${fClasse()}${fPeriode()}</div>`;
   if(loadState!=="ok") return app.innerHTML=`<div class="wrap">${tabs}<div class="panel">${filters}<div class="empty">${stateMsg()}</div></div></div>`;
@@ -482,6 +543,50 @@ function renderFamilles(){
       ${withText.length?`<div class="pcards">${withText.slice(0,150).map(card).join("")}</div>`:`<div class="empty">Pas encore de commentaire pour ces filtres.</div>`}</div>
     <div class="panel"><h3>Nouvelle période</h3><p class="muted" style="margin:0">Efface les réponses de familles affichées avec les filtres ci-dessus.</p>${confirm}</div>`;
 }
+function filteredEmotions(){const st=periodStart();return emotions.filter(e=>byClasse(e)&&(e.at||0)>=st);}
+function renderEmotions(){
+  const filters=`<div class="filters">${fClasse()}${fPeriode()}</div>`;
+  if(loadState!=="ok") return `<div class="panel">${filters}<div class="empty">${stateMsg()}</div></div>`;
+  if(!emoReady) return `<div class="panel">${filters}<div class="empty">L'espace émotions n'est pas encore activé dans la base de données (table « emotions » à créer, voir le README).</div></div>`;
+  const list=filteredEmotions(), n=list.length;
+  const todo=emotions.filter(e=>e.parler&&!e.traite);
+  const when=t=>new Date(t).toLocaleString("fr-FR",{weekday:"short",day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"});
+  const causesTxt=e=>(e.causes||[]).map(c=>c==="autre"&&e.cause_autre?"Autre : "+e.cause_autre:(CAUSES.find(x=>x[0]===c)||[0,"",c])[2]).join(", ");
+  const todoHtml=todo.length?`<div class="pcards">${todo.map(e=>{const [,ic,lb]=emoById(e.emotion);return `<article class="pcard" style="border:3px solid #FF5C5C">
+      <div class="meta"><b style="font-size:1.1rem;color:var(--ink)">${e.prenom?esc(e.prenom):"Prénom non donné"}</b> · ${esc(e.classe)} · ${when(e.at)}</div>
+      <div class="txt" style="font-size:1.2rem">${ic} ${esc(lb)}${e.intensite===2?" (beaucoup)":e.intensite===1?" (un peu)":""}</div>
+      ${causesTxt(e)?`<div class="meta">À cause de : ${esc(causesTxt(e))}</div>`:""}
+      ${e.texte?`<div class="txt">« ${esc(e.texte)} »</div>`:""}
+      <div class="foot"><button class="btn primary small" data-traite="${esc(e.id)}">C'est fait ✓</button></div></article>`}).join("")}</div>`
+    :`<div class="empty">Aucun enfant n'attend de discussion pour l'instant.</div>`;
+  const cnt={}; list.forEach(e=>cnt[e.emotion]=(cnt[e.emotion]||0)+1);
+  const max=Math.max(1,...Object.values(cnt));
+  const bars=n?`<div class="rank">${EMOS.map(([id,ic,lb,col])=>{const c=cnt[id]||0;return `<div class="rk"><span class="e" aria-hidden="true">${ic}</span><span class="n">${lb}</span><span class="track"><span class="fill" style="width:${c/max*100}%;background:${col};filter:saturate(1.6) brightness(.92)"></span></span><span class="v">${c}<small>${Math.round(c/n*100)} %</small></span></div>`}).join("")}</div>`
+    :`<div class="empty">Pas encore de réponse pour ces filtres.</div>`;
+  const pos=list.filter(e=>EMO_POS.includes(e.emotion)).length;
+  const neg=list.filter(e=>!EMO_POS.includes(e.emotion));
+  const cc={}; neg.forEach(e=>(e.causes||[]).forEach(c=>cc[c]=(cc[c]||0)+1));
+  const causeRank=rankHtml(Object.entries(cc).sort((a,b)=>b[1]-a[1]),neg.length||1,id=>{const c=CAUSES.find(x=>x[0]===id)||["","•",id];return {e:c[1],l:c[2]};},"#FF8A80")||`<div class="empty">Pas encore de cause indiquée pour les émotions difficiles.</div>`;
+  const table=`<div class="tbl"><table><thead><tr><th>Classe</th>${EMOS.map(([id,ic,lb])=>`<th title="${lb}" style="font-size:1.2rem">${ic}</th>`).join("")}<th>Total</th></tr></thead><tbody>${CLASSES.map(c=>{const r=EMOS.map(([id])=>list.filter(e=>e.classe===c.id&&e.emotion===id).length);const tot=r.reduce((a,b)=>a+b,0);return tot?`<tr><td><b>${c.id}</b></td>${r.map(x=>`<td>${x||"–"}</td>`).join("")}<td><b>${tot}</b></td></tr>`:""}).join("")||`<tr><td colspan="10" class="muted">Pas encore de réponse.</td></tr>`}</tbody></table></div>`;
+  const words=list.filter(e=>e.texte||e.cause_autre);
+  const wordsHtml=words.length?`<div class="pcards">${words.slice(0,120).map(e=>{const [,ic,lb]=emoById(e.emotion);return `<article class="pcard"><div class="meta">${ic} ${esc(lb)} · <b>${esc(e.classe)}</b> · ${fdate(e.at)}</div>
+      ${e.cause_autre?`<div class="meta">À cause de : ${esc(e.cause_autre)}</div>`:""}${e.texte?`<div class="txt">${esc(e.texte)}</div>`:""}
+      <div class="foot">${adm.delp===e.id?`<span class="muted" style="font-size:.85rem;align-self:center">Effacer ?</span><button class="btn small danger" data-delok="${esc(e.id)}">Oui</button><button class="btn small" data-delno="1">Non</button>`:`<button class="btn small" data-delp="${esc(e.id)}">Effacer</button>`}</div></article>`}).join("")}</div>`:`<div class="empty">Pas encore de message.</div>`;
+  const confirm=adm.confirm?`<div class="confirm"><span>Effacer définitivement les <b>${n}</b> réponses affichées ?</span><button class="btn danger" id="doDel">Oui, effacer</button><button class="btn" id="noDel">Annuler</button></div>`
+    :`<div><button class="btn danger" id="askDel" ${n?"":"disabled"}>Effacer ces ${n} réponses…</button></div>`;
+  return `<div class="panel" style="border:3px solid ${todo.length?"#FF5C5C":"var(--line)"}"><h3>🙋 Enfants qui veulent parler à un animateur</h3>
+      <p class="muted" style="margin:0;font-size:.9rem">« C'est fait » retire l'enfant de cette liste et efface son prénom.</p>${todoHtml}</div>
+    <div class="panel">${filters}
+      <div class="kpis"><div class="kpi"><b>${n}</b><span>réponses</span></div>
+        <div class="kpi"><b>${n?Math.round(pos/n*100)+" %":"–"}</b><span>d'émotions agréables (joie, calme, fierté, surprise)</span></div>
+        <div class="kpi"><b>${todo.length}</b><span>enfants à voir</span></div></div></div>
+    <div class="cols">
+      <div class="panel"><h3>Comment se sentent les enfants</h3>${bars}</div>
+      <div class="panel"><h3>Ce qui provoque les émotions difficiles</h3><p class="muted" style="margin:0;font-size:.9rem">Tristesse, colère, peur, fatigue.</p>${causeRank}</div></div>
+    <div class="panel"><h3>Par classe</h3>${table}</div>
+    <div class="panel"><h3>Ce qu'ils ont voulu dire</h3>${wordsHtml}</div>
+    <div class="panel"><h3>Nouvelle période</h3><p class="muted" style="margin:0">Efface les réponses affichées avec les filtres ci-dessus.</p>${confirm}</div>`;
+}
 function renderActsAdmin(){
   return MOMENTS.map(m=>`<div class="panel"><h3>${m.pic} ${m.lbl}</h3>
     <p class="muted" style="margin:0;font-size:.9rem">Touche une activité pour la cacher ou la remettre. Les activités ajoutées peuvent être retirées.</p>
@@ -527,8 +632,8 @@ async function deleteIds(table,ids){
   return ok;
 }
 async function deleteFiltered(){
-  const table=adm.tab==="par"?"paroles":adm.tab==="fam"?"familles":"envies";
-  const list=table==="paroles"?filteredParoles():table==="familles"?filteredFamilles():filteredVotes(); adm.confirm=false;
+  const table=adm.tab==="par"?"paroles":adm.tab==="fam"?"familles":adm.tab==="emo"?"emotions":"envies";
+  const list=table==="paroles"?filteredParoles():table==="familles"?filteredFamilles():table==="emotions"?filteredEmotions():filteredVotes(); adm.confirm=false;
   toast("Effacement en cours…"); render();
   const ok=await deleteIds(table,list.map(v=>v.id));
   toast(ok+" effacées."); loadAll();
@@ -564,6 +669,12 @@ document.addEventListener("click",e=>{
     return;}
   if(d.mood){s.humeur=s.humeur===d.mood?null:d.mood; if(s.humeur) say(MOODS.find(x=>x.id===d.mood).lbl); render(); return;}
   if(d.tag){const i=s.tags.indexOf(d.tag); if(i>=0) s.tags.splice(i,1); else {s.tags.push(d.tag); say(tagById(s.view,d.tag).l);} render(); return;}
+  if(d.emo){ s.emo=s.emo===d.emo?null:d.emo; s.intensite=null; if(s.emo) say(emoById(s.emo)[2]); render(); return; }
+  if(d.int){ const v=+d.int; s.intensite=s.intensite===v?null:v; if(s.intensite) say(v===1?"Un peu":"Beaucoup"); render(); return; }
+  if(d.cause){ const i=s.causes.indexOf(d.cause); if(i>=0) s.causes.splice(i,1); else { s.causes.push(d.cause); say((CAUSES.find(c=>c[0]===d.cause)||[])[2]||""); } render(); return; }
+  if(d.parler){ const v=d.parler==="oui"; s.parler=s.parler===v?null:v; if(s.parler!==null) say(v?"Oui. Écris ton prénom, ou demande à un grand.":"Non, ça va."); render(); if(s.parler===true) setTimeout(()=>$("#prenom")?.focus({preventScroll:false}),50); return; }
+  if(t.id==="sendEmo"){ sendEmotion(); return; }
+  if(t.id==="breathe"){ startBreathing(); return; }
   if(d.pmoment){s.pmoment=s.pmoment===d.pmoment?null:d.pmoment; if(s.pmoment) say(momentLbl(s.pmoment)); render(); return;}
   if(d.pen){pen=d.pen; render(); return;}
   if(t.id==="clearDraw"){s.dessin=null; render(); return;}
@@ -575,8 +686,9 @@ document.addEventListener("click",e=>{
   if(t.id==="noDel"){adm.confirm=false;render();return;}
   if(t.id==="doDel"){deleteFiltered();return;}
   if(d.delp){adm.delp=d.delp;render();return;}
+  if(d.traite){ const id=d.traite; sb.from("emotions").update({traite:true,prenom:""}).eq("id",id).then(({error})=>{ toast(error?"Pas enregistré. Réessaie.":"C'est noté. Le prénom a été effacé."); loadAll(); }); return; }
   if(d.delno){adm.delp=null;render();return;}
-  if(d.delok){const id=d.delok; adm.delp=null; deleteIds(adm.tab==="fam"?"familles":"paroles",[id]).then(n=>{toast(n?"Effacé.":"Pas effacé. Réessaie.");loadAll();}); return;}
+  if(d.delok){const id=d.delok; adm.delp=null; deleteIds(adm.tab==="fam"?"familles":adm.tab==="emo"?"emotions":"paroles",[id]).then(n=>{toast(n?"Effacé.":"Pas effacé. Réessaie.");loadAll();}); return;}
   if(d.remove){e.stopPropagation(); const added={...config.added}; for(const m in added) added[m]=(added[m]||[]).filter(a=>a.id!==d.remove); saveConfig({added,hidden:(config.hidden||[]).filter(h=>h!==d.remove)}); return;}
   if(d.toggle){const h=new Set(config.hidden||[]); h.has(d.toggle)?h.delete(d.toggle):h.add(d.toggle); saveConfig({hidden:[...h]}); return;}
   if(d.add){const m=d.add,l=$("#l-"+m).value.trim(),em=$("#e-"+m).value.trim()||"⭐"; if(!l){toast("Écris le nom de l'activité.");return;}
