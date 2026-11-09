@@ -640,9 +640,12 @@ function renderSettings(){
       return `<b style="font-size:1.1rem">📱 Recevoir l'alerte sur son téléphone, même appli fermée (facultatif)</b>
       <div class="ntfy-steps"><div class="qrbox">${qr}</div><ol>
         <li><b>Installez l'appli gratuite « ntfy »</b> sur votre téléphone (Play Store ou App Store).</li>
-        <li><b>Scannez ce QR code</b> avec l'appareil photo du téléphone, puis touchez <b>« S'abonner »</b> (Subscribe).</li></ol></div>
+        <li><b>Scannez ce QR code</b> avec l'appareil photo du téléphone (depuis un autre écran), puis touchez <b>« S'abonner »</b> (Subscribe).</li></ol></div>
+      <div class="ntfy-phone"><b>Vous êtes déjà sur votre téléphone ?</b> Après avoir installé ntfy :
+        <div class="tabs"><a class="btn primary" href="ntfy://ntfy.sh/${esc(acc.ntfy.ntfy_topic)}">📲 S'abonner depuis ce téléphone</a></div>
+        <small class="muted">Si le bouton ne fait rien : touchez <b>Copier le nom du canal</b>, ouvrez ntfy, touchez <b>+</b>, collez le nom, puis <b>S'abonner</b>.</small></div>
       <div class="tabs"><button class="btn primary" id="ntfyTest" data-topic="${esc(acc.ntfy.ntfy_topic)}">Envoyer une alerte de test</button>
-        <button class="btn small" id="copyTopic" data-url="${esc(acc.ntfy.ntfy_topic)}">Pas de QR ? Copier le nom du canal</button></div>
+        <button class="btn" id="copyTopic" data-url="${esc(acc.ntfy.ntfy_topic)}">Copier le nom du canal</button></div>
       <small class="muted">Ce QR code est réservé à l'équipe. L'alerte dit seulement « Un enfant de CP demande un animateur » : ni prénom, ni émotion.</small>`;})()
       :`<small class="muted">📱 Alertes sur téléphone : pas encore activées.</small>`}</div>
     <small class="muted">${"Notification" in window?{granted:"✅ Notifications autorisées sur cet appareil.",denied:"⛔ Notifications bloquées : autorisez-les dans les réglages du navigateur pour ce site.",default:"Notifications pas encore autorisées sur cet appareil."}[Notification.permission]:"Ce navigateur ne gère pas les notifications : le son et le bandeau rouge restent actifs."} Sur iPhone/iPad, ajoutez d'abord l'appli à l'écran d'accueil.</small></div>
