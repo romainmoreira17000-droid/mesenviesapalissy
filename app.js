@@ -348,7 +348,7 @@ function renderLogin(app){
     <button class="btn primary" type="submit" ${adm.busy?"disabled":""}>${adm.busy?"Patiente…":signup?"Créer mon compte":"Se connecter"}</button>
     <button class="btn" type="button" id="switchMode">${signup?"J'ai déjà un compte : me connecter":"Pas encore de compte ? Créer mon compte"}</button></form></div>`;
   $("#loginForm").addEventListener("submit",async e=>{
-    e.preventDefault(); const email=e.target.lemail.value.trim(), password=e.target.lpass.value;
+    e.preventDefault(); unlockAlerts(); const email=e.target.lemail.value.trim(), password=e.target.lpass.value;
     adm.busy=true; adm.err=""; acc.msg=""; render();
     if(signup){
       const {data,error}=await sb.auth.signUp({email,password,options:{emailRedirectTo:location.href.split("#")[0]}});
@@ -395,8 +395,38 @@ async function loadAll(){
   }catch(e){ console.error(e); loadState="err"; }
   if(s.view==="adm") render();
 }
-function startRefresh(){ stopRefresh(); refreshTimer=setInterval(()=>{ if(s.view==="adm"&&!adm.confirm&&!adm.delp) loadAll(); },60000); }
-function stopRefresh(){ clearInterval(refreshTimer); refreshTimer=null; }
+let todoKnown=null, todoTimer=null, audioCtx=null, baseTitle=document.title;
+function startRefresh(){ stopRefresh(); baseTitle=document.title.replace(/^🔴 \(\d+\) Un enfant veut parler · /,""); refreshTimer=setInterval(()=>{ if(s.view==="adm"&&!adm.confirm&&!adm.delp) loadAll(); },60000);
+  todoTimer=setInterval(pollTodo,15000); pollTodo(); }
+function stopRefresh(){ clearInterval(refreshTimer); refreshTimer=null; clearInterval(todoTimer); todoTimer=null; todoKnown=null; document.title=baseTitle; }
+function unlockAlerts(){ /* appelé pendant un clic : autorise le son et demande la permission des notifications */
+  try{ audioCtx=audioCtx||new (window.AudioContext||window.webkitAudioContext)(); audioCtx.resume?.(); }catch(e){}
+  try{ if("Notification" in window&&Notification.permission==="default") Notification.requestPermission(); }catch(e){}
+}
+function chime(){
+  try{ const c=audioCtx; if(!c) return; const t=c.currentTime;
+    [[880,0],[1175,.18],[1568,.36]].forEach(([f,d])=>{const o=c.createOscillator(),g=c.createGain();o.type="sine";o.frequency.value=f;
+      g.gain.setValueAtTime(0,t+d);g.gain.linearRampToValueAtTime(.35,t+d+.02);g.gain.exponentialRampToValueAtTime(.001,t+d+.5);o.connect(g).connect(c.destination);o.start(t+d);o.stop(t+d+.55);}); }catch(e){}
+}
+function alertAnim(rows){
+  chime(); try{navigator.vibrate?.([300,150,300,150,300]);}catch(e){}
+  const r=rows[0], [,ic,lb]=emoById(r.emotion);
+  const body=rows.length>1?`${rows.length} enfants veulent parler à un animateur.`:`${r.prenom?r.prenom+" ":"Un enfant "}(${r.classe}) · ${ic} ${lb}`;
+  try{ if("Notification" in window&&Notification.permission==="granted"){ const n=new Notification("🙋 Un enfant veut parler à un animateur",{body,tag:"emotions-"+r.id,requireInteraction:true,icon:"icon.svg"}); n.onclick=()=>{window.focus();adm.tab="emo";s.view="adm";render();n.close();}; } }catch(e){}
+  toast("🙋 "+body);
+}
+async function pollTodo(){
+  if(!sb||!session) return;
+  const {data,error}=await sb.from("emotions").select("id,classe,emotion,prenom,created_at").eq("parler",true).eq("traite",false).order("created_at",{ascending:false}).limit(50);
+  if(error) return;
+  const ids=new Set(data.map(r=>r.id));
+  document.title=data.length?`🔴 (${data.length}) Un enfant veut parler · ${baseTitle}`:baseTitle;
+  if(todoKnown){ const fresh=data.filter(r=>!todoKnown.has(r.id)); if(fresh.length){ alertAnim(fresh); loadAll(); } }
+  else if(data.length){ alertAnim(data); }
+  todoKnown=ids; todoCount=data.length;
+  if(s.view==="adm") { const b=$("#todoBanner"); if(b){ b.hidden=!data.length; b.querySelector("b").textContent=data.length; } }
+}
+let todoCount=0;
 
 /* ---------------- Espace animateur ---------------- */
 function periodStart(){
@@ -421,7 +451,8 @@ function stateMsg(){return loadState==="err"?"Impossible de lire les réponses. 
 
 function renderAdmin(app){
   const upd=lastLoad?new Date(lastLoad).toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"}):"–";
-  const tabs=`<div class="adminbar"><div class="tabs">
+  const nTodo=Math.max(todoCount,emotions.filter(e=>e.parler&&!e.traite).length);
+  const tabs=`<button class="todo-banner" id="todoBanner" data-tab="emo" ${nTodo?"":"hidden"}>🙋 <b>${nTodo}</b> enfant(s) veulent parler à un animateur · Voir →</button><div class="adminbar"><div class="tabs">
     <button class="chip" data-tab="res" aria-pressed="${adm.tab==="res"}">📊 Envies d'activités</button>
     <button class="chip" data-tab="par" aria-pressed="${adm.tab==="par"}">💬 Paroles des enfants</button>
     <button class="chip" data-tab="emo" aria-pressed="${adm.tab==="emo"}">😊 Émotions${(()=>{const n=emotions.filter(e=>e.parler&&!e.traite).length;return n?` <span class="pill" style="background:#FF5C5C;color:#fff">${n}</span>`:"";})()}</button>
@@ -600,6 +631,10 @@ function renderSettings(){
     <div class="famlink"><img class="qr" src="qr-familles.svg" alt="QR code de l'espace familles"><div style="display:flex;flex-direction:column;gap:8px;min-width:0">
       <code style="overflow-wrap:anywhere">${esc(famUrl)}</code><div class="tabs"><button class="btn" id="copyFam" data-url="${esc(famUrl)}">Copier le lien</button><a class="btn" href="familles.html" target="_blank" rel="noopener">Ouvrir</a></div>
       <small class="muted">Le QR code peut être imprimé sur une affiche : clic droit sur l'image › Enregistrer.</small></div></div></div>
+  <div class="panel"><h3>🔔 Alertes « un enfant veut parler »</h3>
+    <p class="muted" style="margin:0">Tant que l'espace animateur est ouvert sur cet appareil, il vérifie toutes les 15 secondes : son, vibration et notification dès qu'un enfant demande un animateur.</p>
+    <div class="tabs"><button class="btn primary" id="notifOn">Activer les notifications</button><button class="btn" id="notifTest">Tester l'alerte</button></div>
+    <small class="muted">${"Notification" in window?{granted:"✅ Notifications autorisées sur cet appareil.",denied:"⛔ Notifications bloquées : autorisez-les dans les réglages du navigateur pour ce site.",default:"Notifications pas encore autorisées sur cet appareil."}[Notification.permission]:"Ce navigateur ne gère pas les notifications : le son et le bandeau rouge restent actifs."} Sur iPhone/iPad, ajoutez d'abord l'appli à l'écran d'accueil.</small></div>
   <div class="panel"><h3>👥 Comptes animateurs</h3>
     <p class="muted" style="margin:0">Un collègue crée son compte avec « Pas encore de compte ? » sur l'écran de connexion, puis tu le valides ici. Seuls les comptes validés voient les réponses.</p>
     ${acc.pending.length?`<div class="actlist" style="flex-direction:column;align-items:stretch">${acc.pending.map(u=>`<div class="confirm" style="border-color:var(--peri)"><span style="flex:1;min-width:0;overflow-wrap:anywhere">⏳ <b>${esc(u.email)}</b> <small class="muted">demandé le ${fdate(u.created_at)}</small></span><button class="btn primary" data-valider="${esc(u.id)}">Valider</button><button class="btn danger" data-refuser="${esc(u.id)}">Refuser</button></div>`).join("")}</div>`:`<div class="muted">Aucun compte en attente.</div>`}
@@ -655,6 +690,8 @@ document.addEventListener("click",e=>{
   if(t.id==="switchMode"){ acc.mode=acc.mode==="signup"?"login":"signup"; adm.err=""; acc.msg=""; render(); return; }
   if(d.valider){ sb.rpc("valider_animateur",{uid:d.valider}).then(({error})=>{toast(error?"Validation impossible.":"Compte validé.");loadTeam();}); return; }
   if(d.refuser){ sb.rpc("refuser_compte",{uid:d.refuser}).then(({error})=>{toast(error?"Refus impossible.":"Compte supprimé.");loadTeam();}); return; }
+  if(t.id==="notifOn"){ unlockAlerts(); try{ Notification.requestPermission().then(()=>render()); }catch(e){ toast("Ce navigateur ne gère pas les notifications."); } return; }
+  if(t.id==="notifTest"){ unlockAlerts(); setTimeout(()=>alertAnim([{id:"test"+Date.now(),classe:"GS",emotion:"tristesse",prenom:"Test"}]),300); return; }
   if(t.id==="savePass"){ const v=$("#newpass").value; if(v.length<8){toast("8 caractères minimum.");return;}
     sb.auth.updateUser({password:v}).then(({error})=>{ toast(error?"Mot de passe non changé : "+error.message:"Mot de passe changé."); if(!error) $("#newpass").value=""; }); return; }
   if(t.id==="copyFam"){ navigator.clipboard?.writeText(d.url).then(()=>toast("Lien copié."),()=>toast("Copie impossible : sélectionnez le lien à la main.")); return; }
@@ -699,7 +736,7 @@ document.addEventListener("change",e=>{ if(["fm","fc","fp","pt","ft"].includes(e
 window.addEventListener("online",flushQueue);
 
 /* ---------------- Démarrage ---------------- */
-if(CFG.nomCentre){ const t=`Mes envies à ${CFG.nomCentre}`; $("#appTitle").textContent=t; document.title=t; }
+if(CFG.nomCentre){ const t=`Mes envies à ${CFG.nomCentre}`; $("#appTitle").textContent=t; document.title=t; baseTitle=t; }
 if(!configured){ const b=$("#setupBanner"); b.hidden=false; b.textContent="L'appli n'est pas encore reliée à Supabase : les réponses restent sur cette tablette en attendant. Remplis le fichier config.js (voir le README)."; }
 render(); showQueue();
 loadConfig(); flushQueue(); setInterval(flushQueue,60000);
