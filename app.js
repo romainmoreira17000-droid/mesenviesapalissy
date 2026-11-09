@@ -692,7 +692,7 @@ function renderSettings(){
   return `<div class="panel"><h3>👨‍👩‍👧 Lien de l'espace familles</h3>
     <p class="muted" style="margin:0">À envoyer aux parents (mail, ENT, affiche). Ils répondent depuis leur téléphone, sans compte.</p>
     <div class="famlink"><img class="qr" src="qr-familles.svg" alt="QR code de l'espace familles"><div style="display:flex;flex-direction:column;gap:8px;min-width:0">
-      <code style="overflow-wrap:anywhere">${esc(famUrl)}</code><div class="tabs"><button class="btn" id="copyFam" data-url="${esc(famUrl)}">Copier le lien</button><a class="btn" href="familles.html" target="_blank" rel="noopener">Ouvrir</a></div>
+      <code style="overflow-wrap:anywhere">${esc(famUrl)}</code><div class="tabs"><button class="btn" id="copyFam" data-url="${esc(famUrl)}">Copier le lien</button><a class="btn" href="familles.html" target="_blank" rel="noopener">Ouvrir</a><a class="btn primary" href="affiche-familles.pdf" target="_blank" rel="noopener">🖨️ Affiche A4 à imprimer</a></div>
       <small class="muted">Le QR code peut être imprimé sur une affiche : clic droit sur l'image › Enregistrer.</small></div></div></div>
   <div class="panel"><h3>🔔 Alertes « un enfant veut parler »</h3>
     <p class="muted" style="margin:0">Tant que l'espace animateur est ouvert sur cet appareil, il vérifie toutes les 15 secondes : son, vibration et notification dès qu'un enfant demande un animateur.</p>
