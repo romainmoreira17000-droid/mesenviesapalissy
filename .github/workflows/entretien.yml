@@ -1,0 +1,19 @@
+# Chaque jour : une petite visite à la base Supabase pour qu'elle ne soit pas mise en pause
+# (offre gratuite : pause après environ 7 jours sans activité), et le nettoyage des vieilles données.
+name: Entretien quotidien
+on:
+  schedule:
+    - cron: "17 4 * * *"
+  workflow_dispatch:
+permissions: {}
+jobs:
+  entretien:
+    runs-on: ubuntu-latest
+    env:
+      URL: https://whwsyufgsxuutocskphz.supabase.co/rest/v1
+      KEY: sb_publishable_KKXUNjH000ksLubE9KM66g_Pb19Qzns
+    steps:
+      - name: Visite (évite la mise en pause)
+        run: curl -fsS "$URL/reglages?select=id" -H "apikey: $KEY" -o /dev/null
+      - name: Nettoyage des vieilles données
+        run: curl -sS -X POST "$URL/rpc/nettoyage" -H "apikey: $KEY" -H "Content-Type: application/json" -d '{}' -o /dev/null -w "%{http_code}\n"

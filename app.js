@@ -374,7 +374,7 @@ function renderLogin(app){
     const {data:ok}=await sb.rpc("is_animateur");
     adm.busy=false;
     if(ok!==true){ await sb.auth.signOut(); adm.err="Ton compte n'est pas encore validé. Demande à un animateur de le valider dans l'onglet Aide."; render(); return; }
-    session=data.session; s.view="adm"; loadAll(); loadTeam(); startRefresh(); render();
+    session=data.session; s.view="adm"; nettoyer().then(loadAll); loadTeam(); startRefresh(); render();
   });
 }
 async function loadTeam(){
@@ -478,7 +478,7 @@ function renderAdmin(app){
   if(adm.tab==="fam") return app.innerHTML=`<div class="wrap">${tabs}${renderFamilles()}</div>`;
   if(adm.tab==="emo") return app.innerHTML=`<div class="wrap">${tabs}${renderEmotions()}</div>`;
 
-  const filters=`<div class="filters"><label>Moment ${sel("fm",adm.fm,[["all","Tous les moments"],...MOMENTS.map(m=>[m.id,m.lbl])])}</label>${fClasse()}${fPeriode()}</div>`;
+  const filters=`<div class="filters"><label>Moment ${sel("fm",adm.fm,[["all","Tous les moments"],...MOMENTS.map(m=>[m.id,m.lbl])])}</label>${fClasse()}${fPeriode()}<button class="btn" id="exportCsv">⬇️ Exporter (Excel)</button></div>`;
   if(loadState!=="ok") return app.innerHTML=`<div class="wrap">${tabs}<div class="panel">${filters}<div class="empty">${stateMsg()}</div></div></div>`;
 
   const list=filteredVotes(), n=list.length;
@@ -511,7 +511,7 @@ function renderAdmin(app){
 }
 
 function renderParoles(){
-  const filters=`<div class="filters"><label>Espace ${sel("pt",adm.pt,[["all","Tous"],...Object.entries(PTYPES).map(([k,p])=>[k,p.pic+" "+p.lbl])])}</label>${fClasse()}${fPeriode()}</div>`;
+  const filters=`<div class="filters"><label>Espace ${sel("pt",adm.pt,[["all","Tous"],...Object.entries(PTYPES).map(([k,p])=>[k,p.pic+" "+p.lbl])])}</label>${fClasse()}${fPeriode()}<button class="btn" id="exportCsv">⬇️ Exporter (Excel)</button></div>`;
   if(loadState!=="ok") return `<div class="panel">${filters}<div class="empty">${stateMsg()}</div></div>`;
   const all=filteredParoles(false), list=filteredParoles();
   const cnt=k=>all.filter(p=>p.type===k).length;
@@ -538,7 +538,7 @@ function renderParoles(){
 function filteredFamilles(useType=true){const st=periodStart();return familles.filter(r=>(!useType||adm.ft==="all"||r.type===adm.ft)&&(r.at||0)>=st);}
 function renderFamilles(){
   const {TEMPS,ITEMS,NOTES,NOTE_COL,RECO,TAGS,TYPES}=window.FAM;
-  const filters=`<div class="filters"><label>Partie ${sel("ft",adm.ft,[["all","Toutes"],...Object.entries(TYPES).map(([k,t])=>[k,t.pic+" "+t.lbl])])}</label>${fPeriode()}</div>`;
+  const filters=`<div class="filters"><label>Partie ${sel("ft",adm.ft,[["all","Toutes"],...Object.entries(TYPES).map(([k,t])=>[k,t.pic+" "+t.lbl])])}</label>${fPeriode()}<button class="btn" id="exportCsv">⬇️ Exporter (Excel)</button></div>`;
   if(loadState!=="ok") return `<div class="panel">${filters}<div class="empty">${stateMsg()}</div></div>`;
   const all=filteredFamilles(false), list=filteredFamilles();
   const sat=all.filter(r=>r.type==="satisfaction");
@@ -588,7 +588,7 @@ function renderFamilles(){
 }
 function filteredEmotions(){const st=periodStart();return emotions.filter(e=>byClasse(e)&&(e.at||0)>=st);}
 function renderEmotions(){
-  const filters=`<div class="filters">${fClasse()}${fPeriode()}</div>`;
+  const filters=`<div class="filters">${fClasse()}${fPeriode()}<button class="btn" id="exportCsv">⬇️ Exporter (Excel)</button></div>`;
   if(loadState!=="ok") return `<div class="panel">${filters}<div class="empty">${stateMsg()}</div></div>`;
   if(!emoReady) return `<div class="panel">${filters}<div class="empty">L'espace émotions n'est pas encore activé dans la base de données (table « emotions » à créer, voir le README).</div></div>`;
   const list=filteredEmotions(), n=list.length;
@@ -629,6 +629,57 @@ function renderEmotions(){
     <div class="panel"><h3>Par classe</h3>${table}</div>
     <div class="panel"><h3>Ce qu'ils ont voulu dire</h3>${wordsHtml}</div>
     <div class="panel"><h3>Nouvelle période</h3><p class="muted" style="margin:0">Efface les réponses affichées avec les filtres ci-dessus.</p>${confirm}</div>`;
+}
+/* ---------------- Conservation limitée des données ---------------- */
+const KEEP={prenomJours:7,emotionsJours:90,toutJours:400};
+async function nettoyer(){
+  if(!sb||!session) return;
+  const avant=j=>new Date(Date.now()-j*864e5).toISOString();
+  try{
+    const r=await sb.rpc("nettoyage");               // fait tout côté base si la fonction existe
+    if(r.error){                                     // sinon, l'essentiel depuis le compte animateur
+      await sb.from("emotions").update({prenom:""}).neq("prenom","").lt("created_at",avant(KEEP.prenomJours));
+      await sb.from("emotions").delete().lt("created_at",avant(KEEP.emotionsJours));
+      for(const t of ["envies","paroles","familles"]) await sb.from(t).delete().lt("created_at",avant(KEEP.toutJours));
+    }
+  }catch(e){ console.warn(e); }
+}
+
+/* ---------------- Export Excel (CSV) ---------------- */
+function downloadCsv(nom,entetes,lignes){
+  const cell=v=>{ let t=v==null?"":String(v); if(/^[=+\-@\t\r]/.test(t)) t="'"+t; return '"'+t.replace(/"/g,'""')+'"'; };
+  const csv="\uFEFF"+[entetes,...lignes].map(l=>l.map(cell).join(";")).join("\r\n");
+  const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));
+  a.download=nom+"-"+new Date().toISOString().slice(0,10)+".csv"; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href),5000); toast(lignes.length+" lignes exportées.");
+}
+function exportTab(){
+  const d=t=>new Date(t).toLocaleString("fr-FR",{dateStyle:"short",timeStyle:"short"});
+  const F=window.FAM;
+  if(adm.tab==="res"){
+    const L=filteredVotes(); if(!L.length) return toast("Rien à exporter pour ces filtres.");
+    return downloadCsv("envies",["Date","Classe","Moment","Activité 1","Activité 2","Activité 3","Autre activité","Aime venir"],
+      L.map(v=>{const a=(v.activites||[]).map(id=>actById(id).l);return [d(v.at),v.classe,momentLbl(v.moment),a[0]||"",a[1]||"",a[2]||"",v.autre||"",(MOODS.find(m=>m.id===v.humeur)||{}).lbl||""];}));
+  }
+  if(adm.tab==="par"){
+    const L=filteredParoles(); if(!L.length) return toast("Rien à exporter pour ces filtres.");
+    return downloadCsv("paroles-enfants",["Date","Espace","Classe","Moment","Thèmes","Texte","Dessin"],
+      L.map(p=>[d(p.at),(PTYPES[p.type]||{}).lbl||p.type,p.classe,p.moment?momentLbl(p.moment):"",(p.tags||[]).map(t=>tagById(p.type,t).l).join(", "),p.texte||"",p.dessin?"oui":""]));
+  }
+  if(adm.tab==="emo"){
+    const L=filteredEmotions(); if(!L.length) return toast("Rien à exporter pour ces filtres.");
+    return downloadCsv("emotions",["Date","Classe","Émotion","Intensité","Causes","Autre cause","Voulait parler","Vu par un animateur","Mot de l'enfant"],
+      L.map(e=>[d(e.at),e.classe,emoById(e.emotion)[2],e.intensite===2?"beaucoup":e.intensite===1?"un peu":"",(e.causes||[]).map(c=>(CAUSES.find(x=>x[0]===c)||[0,0,c])[2]).join(", "),e.cause_autre||"",e.parler?"oui":"non",e.parler?(e.traite?"oui":"non"):"",e.texte||""]));
+  }
+  if(adm.tab==="fam"){
+    const L=filteredFamilles(); if(!L.length) return toast("Rien à exporter pour ces filtres.");
+    const note=n=>n?(F.NOTES.find(x=>x[0]===n)||[0,0,""])[2]:"";
+    return downloadCsv("familles",["Date","Partie","Temps fréquentés","Classes","Satisfaction générale","Recommande",...F.ITEMS.map(i=>i[1]),"Autre point","Note autre point","Thèmes à améliorer","Commentaire","Idées","Savoir-faire","Contact"],
+      L.map(r=>{const P=r.precisions||{},N=r.notes||{};return [d(r.at),(F.TYPES[r.type]||{}).lbl||r.type,
+        (r.temps||[]).map(t=>t==="autre"&&P.temps?"Autre : "+P.temps:(F.TEMPS.find(x=>x[0]===t)||[0,0,t])[2]).join(", "),(r.niveaux||[]).join(", "),
+        note(r.global),(F.RECO.find(x=>x[0]===r.recommande)||[0,0,""])[2],...F.ITEMS.map(i=>N[i[0]]===0?"sans avis":note(N[i[0]])),P.critere||"",P.critere?note(N.autre):"",
+        (r.tags||[]).map(t=>t==="autre"&&P.theme?"Autre : "+P.theme:(F.TAGS.find(x=>x[0]===t)||[0,0,t])[2]).join(", "),r.texte||"",r.idees||"",r.savoir||"",r.contact||""];}));
+  }
 }
 function renderActsAdmin(){
   return MOMENTS.map(m=>`<div class="panel"><h3>${m.pic} ${m.lbl}</h3>
@@ -672,6 +723,7 @@ function renderSettings(){
     <li>Le bouton 🔊 lit les questions et les images : pratique pour les maternelles.</li>
     <li>Si le wifi coupe, les réponses sont gardées sur la tablette (⏳ en haut) et partent toutes seules quand la connexion revient.</li>
     <li>Les envies sont dans l'onglet 📊, les idées, textes et dessins dans l'onglet 💬.</li>
+    <li><b>Conservation des données</b> : le prénom d'un enfant est effacé au bout de 7 jours (ou dès « C'est fait »), les émotions et les coordonnées des familles au bout de 3 mois, tout le reste au bout de 13 mois.</li>
     <li>Pense à <b>te déconnecter</b> avant de rendre la tablette aux enfants.</li>
     <li>Pour ajouter un animateur : il crée son compte depuis l'écran de connexion, puis tu le valides ci-dessus.</li></ol>
     <p class="muted" style="margin:0">Les réponses sont anonymes : on n'enregistre ni nom ni prénom.</p></div>`;
@@ -716,6 +768,7 @@ document.addEventListener("click",e=>{
     return;}
   if(t.id==="logout"){ logout(); go("accueil"); toast("Déconnecté."); return; }
   if(t.id==="refresh"){ loadAll(); loadTeam(); return; }
+  if(t.id==="exportCsv"){ exportTab(); return; }
   if(t.id==="switchMode"){ acc.mode=acc.mode==="signup"?"login":"signup"; adm.err=""; acc.msg=""; render(); return; }
   if(d.valider){ sb.rpc("valider_animateur",{uid:d.valider}).then(({error})=>{toast(error?"Validation impossible.":"Compte validé.");loadTeam();}); return; }
   if(d.refuser){ sb.rpc("refuser_compte",{uid:d.refuser}).then(({error})=>{toast(error?"Refus impossible.":"Compte supprimé.");loadTeam();}); return; }
@@ -776,5 +829,5 @@ loadConfig(); flushQueue(); setInterval(flushQueue,60000);
 if(sb&&remember) sb.auth.getSession().then(async({data})=>{
   if(!data?.session){ setRemember(false); return; }
   const {data:ok}=await sb.rpc("is_animateur");
-  if(ok===true){ session=data.session; startRefresh(); render(); } else { await sb.auth.signOut(); setRemember(false); }
+  if(ok===true){ session=data.session; nettoyer(); startRefresh(); render(); } else { await sb.auth.signOut(); setRemember(false); }
 }).catch(()=>{});

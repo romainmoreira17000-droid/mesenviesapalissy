@@ -39,6 +39,12 @@ Dans Supabase › SQL Editor › New query, collez le contenu du fichier `supaba
 - **Espace animateur ouvert** (téléphone, tablette, ordinateur) : vérification toutes les 15 secondes, avec son, vibration, notification et bandeau rouge. Réglage et test dans l'onglet ⚙️ Aide.
 - **Sur téléphone, même appli fermée** : avec l'appli gratuite **ntfy**. Pour l'activer une fois, collez `supabase-alertes.sql` dans Supabase › SQL Editor, puis Run. Le nom du canal à suivre s'affiche ensuite dans l'onglet ⚙️ Aide. Le message ne contient ni prénom ni émotion.
 
+### Export, conservation des données, entretien
+
+- **Export Excel** : bouton « ⬇️ Exporter (Excel) » dans les onglets Envies, Paroles, Émotions et Familles (fichier CSV, selon les filtres choisis). L'export des émotions ne contient jamais de prénom.
+- **Conservation limitée** : prénom d'un enfant 7 jours, émotions et coordonnées des familles 3 mois, tout le reste 13 mois. Le nettoyage se fait à chaque connexion d'un animateur, et chaque jour si `supabase-nettoyage.sql` a été exécuté dans Supabase.
+- **Entretien quotidien** (`.github/workflows/entretien.yml`) : GitHub visite la base chaque jour pour éviter sa mise en pause (offre gratuite Supabase). GitHub suspend cette tâche après 60 jours sans modification du dépôt : il suffit alors de la réactiver dans l'onglet Actions.
+
 ## Qui peut faire quoi
 
 | | Enfants et familles | Animateur validé |
