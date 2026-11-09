@@ -87,23 +87,62 @@ async function flushQueue(){
   }finally{flushing=false; showQueue();}
 }
 
+/* ---------------- Le renard mascotte (dessin vectoriel) ---------------- */
+function fox(pose="wave",cls="fox"){
+  const O="#F28A2E",C="#FFF4E6",B="#4A2A17",D="#3B2314";
+  const happy=pose==="cheer";
+  const eyes=happy
+    ?`<path d="M70 84q10-12 20 0M110 84q10-12 20 0" stroke="${D}" stroke-width="6" fill="none" stroke-linecap="round"/>`
+    :`<ellipse cx="80" cy="84" rx="9" ry="11" fill="${D}"/><ellipse cx="120" cy="84" rx="9" ry="11" fill="${D}"/><circle cx="83" cy="79" r="3.5" fill="#fff"/><circle cx="123" cy="79" r="3.5" fill="#fff"/>`;
+  const head=`<path d="M44 62 L36 6 L88 38Z" fill="${O}"/><path d="M50 54 L44 20 L76 42Z" fill="${B}"/>
+    <path d="M156 62 L164 6 L112 38Z" fill="${O}"/><path d="M150 54 L156 20 L124 42Z" fill="${B}"/>
+    <ellipse cx="100" cy="82" rx="66" ry="52" fill="${O}"/>
+    <path d="M34 86 Q62 82 100 102 Q138 82 166 86 Q152 134 100 136 Q48 134 34 86Z" fill="${C}"/>
+    ${eyes}
+    <ellipse cx="100" cy="102" rx="10" ry="7" fill="${D}"/>
+    <path d="M86 112 Q100 132 114 112Z" fill="#B23A3A" stroke="${D}" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M93 121 Q100 128 107 121" fill="#FF8C8C"/>
+    <circle cx="62" cy="106" r="9" fill="#FF9AA2" opacity=".55"/><circle cx="138" cy="106" r="9" fill="#FF9AA2" opacity=".55"/>`;
+  if(pose==="peek"){
+    return `<svg class="${cls}" viewBox="0 0 200 150" aria-hidden="true">${head}<ellipse cx="62" cy="140" rx="16" ry="10" fill="${B}"/><ellipse cx="138" cy="140" rx="16" ry="10" fill="${B}"/></svg>`;
+  }
+  const arm=(d,px,py)=>`<path d="${d}" stroke="${O}" stroke-width="17" stroke-linecap="round" fill="none"/><circle cx="${px}" cy="${py}" r="11" fill="${B}"/>`;
+  const arms=happy
+    ? arm("M66 152 Q40 132 34 102",34,98)+arm("M134 152 Q160 132 166 102",166,98)
+    : arm("M64 154 Q46 172 54 192",54,196)+arm("M136 150 Q166 132 170 100",170,96);
+  return `<svg class="${cls}" viewBox="0 0 210 232" aria-hidden="true">
+    <path d="M136 214 C196 206 206 136 176 112 C184 156 166 184 128 190Z" fill="${O}"/>
+    <path d="M176 112 C190 126 192 146 184 158 C178 138 172 124 176 112Z" fill="${C}"/>
+    <ellipse cx="100" cy="176" rx="46" ry="46" fill="${O}"/>
+    <ellipse cx="100" cy="184" rx="27" ry="32" fill="${C}"/>
+    <path d="M70 140 Q74 178 72 210" stroke="#2F6FD6" stroke-width="10" fill="none" stroke-linecap="round"/>
+    <path d="M130 140 Q126 178 128 210" stroke="#2F6FD6" stroke-width="10" fill="none" stroke-linecap="round"/>
+    ${arms}
+    <ellipse cx="80" cy="220" rx="17" ry="10" fill="${B}"/><ellipse cx="120" cy="220" rx="17" ry="10" fill="${B}"/>
+    ${head}</svg>`;
+}
+const STEP={classe:1,hub:2,moment:3,ameliorer:3,explorer:3,libre:3,choix:4,humeur:4};
+const BACK={classe:"accueil",hub:"classe",moment:"hub",choix:"moment",humeur:"choix",ameliorer:"hub",explorer:"hub",libre:"hub"};
+function nav(){
+  const n=STEP[s.view]||1;
+  const dots=[1,2,3,4].map(i=>`<i class="${i<=n?"on":""}"></i>`).join("<b></b>");
+  return `<div class="topnav"><button class="round" data-go="${BACK[s.view]}" aria-label="Retour">←</button>
+    <div class="dots" aria-label="Étape ${n} sur 4">${dots}</div>${s.classe&&s.view!=="classe"?`<span class="classchip">${esc(s.classe)}</span>`:"<span></span>"}</div>`;
+}
+
 /* ---------------- Rendu enfant ---------------- */
 function render(){
   const app=$("#app");
+  document.body.dataset.scene=s.view.startsWith("adm")?"adm":s.view;
   $("#voiceBtn").setAttribute("aria-pressed",voice);
   $("#voiceBtn").textContent=voice?"🔊 Voix":"🔇 Voix";
   $("#adultBtn").textContent=s.view.startsWith("adm")?"← Retour aux enfants":"Espace animateur";
   if(s.view==="adm-login") return renderLogin(app);
   if(s.view==="adm") return renderAdmin(app);
-  const crumbs=[];
-  if(s.classe) crumbs.push(`<span class="chip">Classe : ${esc(s.classe)}</span>`);
-  if(s.moment&&["choix","humeur"].includes(s.view)) {const m=MOMENTS.find(x=>x.id===s.moment); crumbs.push(`<span class="chip">${m.pic} ${esc(m.lbl)}</span>`);}
-  if(PTYPES[s.view]) crumbs.push(`<span class="chip">${PTYPES[s.view].pic} ${esc(PTYPES[s.view].lbl)}</span>`);
-  const cr=crumbs.length&&s.view!=="merci"?`<div class="crumbs">${crumbs.join("")}</div>`:"";
 
   if(s.view==="accueil"){
-    app.innerHTML=`<div class="wrap">
-      ${q("Bonjour ! Qui es-tu ?")}
+    app.innerHTML=`<div class="wrap kid">
+      <div class="hero">${fox("wave")}<div class="sign">Bonjour !<br>Qui es-tu ?<button class="speak" data-say="Bonjour ! Qui es-tu ? Enfants, ou familles ?" aria-label="Écouter">🔊</button></div></div>
       <div class="grid choose">
         <button class="big who kids" data-go="classe"><span class="pic" aria-hidden="true">🧒</span><span class="lbl">Enfants</span><span class="sub">Je donne mes envies et mes idées</span></button>
         <a class="big who fams" href="familles.html?app"><span class="pic duo" aria-hidden="true">👩🧒</span><span class="lbl">Familles</span><span class="sub">Parents : votre avis sur le centre</span></a>
@@ -112,51 +151,46 @@ function render(){
   }
   if(s.view==="classe"){
     const btn=c=>`<button class="big ${c.cyc}" data-classe="${c.id}"><span class="lbl">${c.id}</span><span class="sub">${c.sub}</span></button>`;
-    app.innerHTML=`<div class="wrap">
-      ${q("Tu es dans quelle classe ?")}
-      <div class="cycle-title">Maternelle</div>
-      <div class="grid classes">${CLASSES.filter(c=>c.cyc==="mat").map(btn).join("")}</div>
-      <div class="cycle-title">Élémentaire</div>
-      <div class="grid classes">${CLASSES.filter(c=>c.cyc==="elem").map(btn).join("")}</div>
-      <div class="bar"><button class="back" data-go="accueil">← Accueil</button></div></div>`;
+    app.innerHTML=`<div class="wrap kid">${nav()}
+      ${q("Tu es dans quelle classe ?","",null,true)}
+      <div class="cyc mat"><div class="cycle-title">Maternelle</div><div class="grid classes">${CLASSES.filter(c=>c.cyc==="mat").map(btn).join("")}</div></div>
+      <div class="cyc elem"><div class="cycle-title">Élémentaire</div><div class="grid classes">${CLASSES.filter(c=>c.cyc==="elem").map(btn).join("")}</div></div></div>`;
   }
   else if(s.view==="hub"){
     const door=(cls,go,pic,lbl,sub)=>`<button class="big door ${cls}" data-go="${go}"><span class="pic" aria-hidden="true">${pic}</span><span class="lbl">${lbl}</span><span class="sub">${sub}</span></button>`;
-    app.innerHTML=`<div class="wrap">${cr}${q("Qu'est-ce que tu veux faire ?")}
+    app.innerHTML=`<div class="wrap kid">${nav()}${q("Qu'est-ce que tu veux faire ?","",null,true)}
       <div class="grid hub">
         ${door("env","moment","🎯","Mes envies d'activités","Choisir ce que j'ai envie de faire")}
         ${Object.entries(PTYPES).map(([k,p])=>door(p.cls,k,p.pic,p.lbl,p.sub)).join("")}
-      </div>
-      <div class="bar"><button class="back" data-go="classe">← Changer de classe</button></div></div>`;
+      </div></div>`;
   }
   else if(s.view==="moment"){
-    app.innerHTML=`<div class="wrap">${cr}${q("C'est pour quel moment ?")}
-      <div class="grid moments">${MOMENTS.map(m=>`<button class="big moment ${m.id}" data-moment="${m.id}"><span class="pic" aria-hidden="true">${m.pic}</span><span class="lbl">${m.lbl}</span><span class="sub">${m.sub}</span></button>`).join("")}</div>
-      <div class="bar"><button class="back" data-go="hub">← Retour</button></div></div>`;
+    app.innerHTML=`<div class="wrap kid">${nav()}${q("C'est pour quel moment ?","","📅")}
+      <div class="grid moments">${MOMENTS.map(m=>`<button class="big moment ${m.id}" data-moment="${m.id}"><span class="pic" aria-hidden="true">${m.pic}</span><span class="lbl">${m.lbl}</span><span class="sub">${m.sub}</span></button>`).join("")}</div></div>`;
   }
   else if(s.view==="choix"){
     const acts=visibleActs(s.moment);
     const n=s.choix.length;
-    app.innerHTML=`<div class="wrap">${cr}${q("Qu'est-ce que tu as envie de faire ?",`Choisis jusqu'à ${MAXCHOIX} activités.`)}
-      <div class="grid acts">${acts.map(a=>{const i=s.choix.indexOf(a.id);return `<button class="big act" data-act="${esc(a.id)}" aria-pressed="${i>=0}"><span class="badge">${i>=0?i+1:""}</span><span class="pic" aria-hidden="true">${esc(a.e)}</span><span class="name">${esc(a.l)}</span></button>`}).join("")}</div>
+    app.innerHTML=`<div class="wrap kid">${nav()}${q("Quelles activités tu as envie de faire ?",`Choisis jusqu'à ${MAXCHOIX} activités.`)}
+      <div class="grid acts">${acts.map(a=>{const i=s.choix.indexOf(a.id);return `<button class="big act" data-act="${esc(a.id)}" aria-pressed="${i>=0}"><span class="badge" aria-hidden="true">✓</span><span class="pic" aria-hidden="true">${esc(a.e)}</span><span class="name">${esc(a.l)}</span></button>`}).join("")}</div>
       <div class="bar"><button class="back" data-go="moment">← Retour</button>
-        <div class="stars" aria-label="${n} sur ${MAXCHOIX}">${Array.from({length:MAXCHOIX},(_,i)=>`<i class="${i<n?"on":""}"></i>`).join("")}</div>
-        <button class="go" data-go="humeur" ${n?"":"disabled"}>J'ai fini ✓</button></div></div>`;
+        <span class="count" aria-label="${n} choix sur ${MAXCHOIX}">${n} / ${MAXCHOIX}</span>
+        <button class="go" data-go="humeur" ${n?"":"disabled"}>J'ai fini ! ✓</button></div></div>`;
   }
   else if(s.view==="humeur"){
-    app.innerHTML=`<div class="wrap">${cr}${q("Tu aimes venir au centre ?","Tu peux aussi passer cette question.")}
+    app.innerHTML=`<div class="wrap kid">${nav()}${q("Tu aimes venir au centre ?","Tu peux aussi passer cette question.")}
       <div class="grid moods">${MOODS.map(m=>`<button class="big mood" data-mood="${m.id}" aria-pressed="${s.humeur===m.id}"><span class="pic" aria-hidden="true">${m.pic}</span><span class="name">${m.lbl}</span></button>`).join("")}</div>
       <div class="bar"><button class="back" data-go="choix">← Retour</button><button class="go" id="send">Envoyer 🚀</button></div></div>`;
   }
   else if(PTYPES[s.view]){
     const t=s.view, P=PTYPES[t];
-    const tagsHtml=P.tags?`<div class="grid tags">${P.tags.map(([id,e,l])=>`<button class="big tag" data-tag="${id}" aria-pressed="${s.tags.includes(id)}"><span class="pic" aria-hidden="true">${e}</span><span class="name">${l}</span></button>`).join("")}</div>`:"";
+    const tagsHtml=P.tags?`<div class="grid tags">${P.tags.map(([id,e,l])=>`<button class="big tag" data-tag="${id}" aria-pressed="${s.tags.includes(id)}"><span class="badge" aria-hidden="true">✓</span><span class="pic" aria-hidden="true">${e}</span><span class="name">${l}</span></button>`).join("")}</div>`:"";
     const momentHtml=t==="ameliorer"?`<div class="idea"><span class="lab">C'est pendant quel moment ?</span><div class="mini">${[...MOMENTS.map(m=>[m.id,m.pic+" "+m.lbl]),["tous","🏫 Partout"]].map(([id,l])=>`<button class="chip" data-pmoment="${id}" aria-pressed="${s.pmoment===id}">${l}</button>`).join("")}</div></div>`:"";
     const drawHtml=t==="libre"?`<div class="draw"><span class="idea"><span class="lab">🖍️ Avec un dessin</span></span>
       <div class="pens">${PENS.map(c=>`<button class="pen" data-pen="${c}" style="background:${c}" aria-label="Crayon de couleur" aria-pressed="${pen===c}"></button>`).join("")}
         <button class="chip" data-pen="eraser" aria-pressed="${pen==="eraser"}">🧽 Gomme</button><button class="chip" id="clearDraw">🗑️ Tout effacer</button></div>
       <canvas id="cv" width="720" height="480" aria-label="Zone de dessin"></canvas></div>`:"";
-    app.innerHTML=`<div class="wrap">${cr}${q(P.q,P.tags?"Touche une ou plusieurs images, puis explique si tu veux.":"Tu peux dessiner, écrire, ou les deux.")}
+    app.innerHTML=`<div class="wrap kid">${nav()}${q(P.q,P.tags?"Touche une ou plusieurs images, puis explique si tu veux.":"Tu peux dessiner, écrire, ou les deux.",P.pic)}
       ${tagsHtml}${momentHtml}${drawHtml}
       <div class="idea"><label for="texte">✏️ ${t==="libre"?"Avec des mots":"Explique ton idée"}</label>
         <small>Un grand peut l'écrire pour toi. Ne mets pas de prénom.</small>
@@ -166,13 +200,18 @@ function render(){
     if(t==="libre") setupCanvas();
   }
   else if(s.view==="merci"){
-    app.innerHTML=`<div class="merci"><div class="pic" aria-hidden="true">🎉</div><h2>Merci !</h2>
-      <p style="font-size:1.3rem;max-width:30ch">C'est bien arrivé chez les animateurs.</p>
-      <div class="row"><button class="go" data-go="hub">Continuer →</button><button class="back" data-go="classe">Changer de classe</button></div>
-      <p class="muted">On revient tout seul au choix dans quelques secondes.</p></div>`;
+    const flags=["#FF5C8A","#FFC93C","#4FD18B","#5AA8FF","#B58CFF"];
+    const bunting=`<svg class="bunting" viewBox="0 0 400 56" preserveAspectRatio="none" aria-hidden="true"><path d="M0 6 Q200 30 400 6" stroke="#fff" stroke-width="3" fill="none"/>${Array.from({length:12},(_,i)=>{const x=i*34+4,y=6+Math.sin((x/400)*Math.PI)*18;return `<path d="M${x} ${y} L${x+28} ${y+1} L${x+14} ${y+30}Z" fill="${flags[i%5]}"/>`}).join("")}</svg>`;
+    const stars=[[6,14],[90,10],[12,52],[88,46],[20,80],[82,74]].map(([x,y])=>`<span style="left:${x}%;top:${y}%">★</span>`).join("");
+    app.innerHTML=`<div class="wrap kid">${bunting}<div class="merci"><div class="stars-deco" aria-hidden="true">${stars}</div>
+      <div class="bravo"><h2>Bravo !</h2><p>C'est bien arrivé<br>chez les animateurs !</p></div>
+      ${fox("cheer")}
+      <button class="home-btn" data-go="accueil">🏠 Retour à l'accueil</button>
+      <button class="later" data-go="hub">Encore une idée ? Continuer en ${esc(s.classe||"")} →</button>
+      <p class="note">On revient tout seul au choix dans quelques secondes.</p></div></div>`;
   }
 }
-function q(t,sub){return `<div class="q"><button class="speak" data-say="${esc(t+(sub?" "+sub:""))}" aria-label="Écouter la question">🔊</button><div><h2>${esc(t)}</h2>${sub?`<div class="muted" style="font-size:1.1rem">${esc(sub)}</div>`:""}</div></div>`;}
+function q(t,sub,ico,withFox){return `<div class="q${withFox?" withfox":""}">${ico?`<span class="qico" aria-hidden="true">${ico}</span>`:""}<div style="flex:1;min-width:0"><h2>${esc(t)}</h2>${sub?`<div class="qsub">${esc(sub)}</div>`:""}</div><button class="speak" data-say="${esc(t+(sub?" "+sub:""))}" aria-label="Écouter la question">🔊</button>${withFox?fox("peek","foxpeek"):""}</div>`;}
 
 function setupCanvas(){
   const cv=$("#cv"), ctx=cv.getContext("2d");
@@ -191,7 +230,7 @@ function setupCanvas(){
 
 const SPEAK={accueil:"Bonjour ! Qui es-tu ? Enfants, ou familles ?",classe:"Tu es dans quelle classe ?",hub:"Qu'est-ce que tu veux faire ? Mes envies d'activités, j'améliore le centre, j'aimerais découvrir, ou je m'exprime.",
   moment:"C'est pour quel moment ?",choix:"Qu'est-ce que tu as envie de faire ? Choisis jusqu'à trois activités.",humeur:"Tu aimes venir au centre ?",
-  ameliorer:"Qu'est-ce que tu changerais au centre ?",explorer:"Qu'est-ce que tu aimerais découvrir ?",libre:"Dis ou dessine ce que tu veux !",merci:"Merci ! C'est bien arrivé."};
+  ameliorer:"Qu'est-ce que tu changerais au centre ?",explorer:"Qu'est-ce que tu aimerais découvrir ?",libre:"Dis ou dessine ce que tu veux !",merci:"Bravo ! C'est bien arrivé chez les animateurs !"};
 function go(view){
   clearTimeout(timer);
   if(view==="classe"||view==="accueil") s={view,classe:null,...fresh()};
