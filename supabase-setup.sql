@@ -103,3 +103,74 @@ create policy "animateurs lisent familles"   on public.familles for select to au
 create policy "animateurs effacent familles" on public.familles for delete to authenticated using (true);
 
 create index if not exists familles_created_at_idx on public.familles (created_at desc);
+
+-- =====================================================================
+-- 6. Animateurs validés : seuls les comptes de cette liste lisent les réponses.
+--    (Un compte créé depuis l'appli doit être validé par un animateur, onglet Aide.)
+-- =====================================================================
+create table if not exists public.animateurs (
+  user_id    uuid primary key references auth.users(id) on delete cascade,
+  email      text not null,
+  created_at timestamptz not null default now()
+);
+alter table public.animateurs enable row level security;
+revoke all on public.animateurs from anon, authenticated;
+
+create or replace function public.is_animateur()
+returns boolean language sql stable security definer set search_path = ''
+as $$ select exists (select 1 from public.animateurs a where a.user_id = auth.uid()) $$;
+revoke all on function public.is_animateur() from public, anon;
+grant execute on function public.is_animateur() to authenticated;
+
+grant select on public.animateurs to authenticated;
+drop policy if exists "animateurs voient la liste" on public.animateurs;
+create policy "animateurs voient la liste" on public.animateurs for select to authenticated using (public.is_animateur());
+
+drop policy if exists "animateurs lisent les envies"    on public.envies;
+drop policy if exists "animateurs effacent les envies"  on public.envies;
+create policy "animateurs lisent les envies"   on public.envies for select to authenticated using (public.is_animateur());
+create policy "animateurs effacent les envies" on public.envies for delete to authenticated using (public.is_animateur());
+drop policy if exists "animateurs lisent les paroles"   on public.paroles;
+drop policy if exists "animateurs effacent les paroles" on public.paroles;
+create policy "animateurs lisent les paroles"   on public.paroles for select to authenticated using (public.is_animateur());
+create policy "animateurs effacent les paroles" on public.paroles for delete to authenticated using (public.is_animateur());
+drop policy if exists "animateurs lisent familles"   on public.familles;
+drop policy if exists "animateurs effacent familles" on public.familles;
+create policy "animateurs lisent familles"   on public.familles for select to authenticated using (public.is_animateur());
+create policy "animateurs effacent familles" on public.familles for delete to authenticated using (public.is_animateur());
+drop policy if exists "animateurs modifient les réglages" on public.reglages;
+create policy "animateurs modifient les réglages" on public.reglages for update to authenticated using (public.is_animateur()) with check (public.is_animateur());
+
+create or replace function public.comptes_en_attente()
+returns table (id uuid, email text, created_at timestamptz)
+language plpgsql stable security definer set search_path = ''
+as $$
+begin
+  if not public.is_animateur() then raise exception 'réservé aux animateurs'; end if;
+  return query select u.id, u.email::text, u.created_at from auth.users u
+    where not exists (select 1 from public.animateurs a where a.user_id = u.id) order by u.created_at desc;
+end $$;
+
+create or replace function public.valider_animateur(uid uuid)
+returns void language plpgsql security definer set search_path = ''
+as $$
+begin
+  if not public.is_animateur() then raise exception 'réservé aux animateurs'; end if;
+  insert into public.animateurs (user_id, email) select u.id, u.email from auth.users u where u.id = uid
+  on conflict (user_id) do nothing;
+end $$;
+
+create or replace function public.refuser_compte(uid uuid)
+returns void language plpgsql security definer set search_path = ''
+as $$
+begin
+  if not public.is_animateur() then raise exception 'réservé aux animateurs'; end if;
+  if uid = auth.uid() then raise exception 'impossible de se retirer soi-même'; end if;
+  delete from auth.users u where u.id = uid;
+end $$;
+
+revoke all on function public.comptes_en_attente(), public.valider_animateur(uuid), public.refuser_compte(uuid) from public, anon;
+grant execute on function public.comptes_en_attente(), public.valider_animateur(uuid), public.refuser_compte(uuid) to authenticated;
+
+-- Le tout premier animateur s'ajoute à la main, après avoir créé son compte :
+-- insert into public.animateurs (user_id, email) select id, email from auth.users where email = 'VOTRE@EMAIL';

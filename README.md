@@ -20,18 +20,18 @@ Les animateurs se connectent dans **Espace animateur** pour voir les résultats,
 
 https://romainmoreira17000-droid.github.io/mesenviesapalissy/
 
-## Mise en route (une seule fois)
+## Mise en route
 
-La base Supabase **mesenviesapalissy** est déjà créée et reliée (fichier `config.js`).
+La base Supabase **mesenviesapalissy** est créée et reliée (fichier `config.js`). Le premier compte animateur existe déjà.
 
-1. **Activer GitHub Pages** : sur GitHub, ouvrez le dépôt, puis Settings › Pages. Sous « Branch », choisissez `main` et `/ (root)`, puis Save. Attendez 1 à 2 minutes.
-2. **Bloquer les inscriptions** (important) : dans Supabase, ouvrez le projet *mesenviesapalissy*, puis Authentication › Sign In / Providers. Désactivez **« Allow new users to sign up »** et enregistrez. Sans ça, n'importe qui pourrait se créer un compte et lire les réponses.
-3. **Créer le compte animateur** : dans Supabase, ouvrez Authentication › Users › Add user › Create new user. Saisissez l'e-mail et le mot de passe, cochez **Auto Confirm User**, puis validez. Faites de même pour chaque collègue.
-4. Sur la tablette, ouvrez l'adresse de l'appli, puis « Ajouter à l'écran d'accueil ».
+1. **GitHub Pages** : Settings › Pages › Branch `main` / `(root)` › Save.
+2. **Se connecter** : Espace animateur, puis l'e-mail et le mot de passe provisoire. Changez ensuite le mot de passe dans l'onglet ⚙️ Aide.
+3. **Ajouter un collègue** : il touche « Pas encore de compte ? Créer mon compte » sur l'écran de connexion, puis un animateur valide son compte dans l'onglet ⚙️ Aide. Tant qu'un compte n'est pas validé, il ne voit aucune réponse.
+4. Sur la tablette, ouvrez l'adresse de l'appli puis « Ajouter à l'écran d'accueil ».
 
 ## Qui peut faire quoi
 
-| | Tablette des enfants | Animateur connecté |
+| | Enfants et familles | Animateur validé |
 |---|---|---|
 | Envoyer une réponse | ✅ | ✅ |
 | Lire les réponses | ❌ | ✅ |

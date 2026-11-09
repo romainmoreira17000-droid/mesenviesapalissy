@@ -47,6 +47,7 @@ let votes=[], paroles=[], familles=[], loadState="idle", lastLoad=0, refreshTime
 let config={added:{peri:[],mer:[],midi:[]},hidden:[]};
 const fresh=()=>({choix:[],humeur:null,moment:null,tags:[],texte:"",dessin:null,pmoment:null});
 let s={view:"classe",classe:null,...fresh()};
+let acc={mode:"login",msg:"",pending:[],team:[]};
 let adm={tab:"res",fm:"all",fc:"all",fp:"all",pt:"all",ft:"all",confirm:false,delp:null,err:"",busy:false};
 let timer=null;
 try{ if(localStorage.getItem("envies-voice")==="off") voice=false; }catch(e){}
@@ -226,22 +227,42 @@ function sendParole(){
 /* ---------------- Connexion animateur ---------------- */
 function renderLogin(app){
   if(!sb){ app.innerHTML=`<div class="panel"><h2>Espace animateur</h2><div class="empty">L'appli n'est pas encore reliée à Supabase : remplis le fichier <b>config.js</b> (voir le mode d'emploi README).</div></div>`; return; }
+  const signup=acc.mode==="signup";
   app.innerHTML=`<div class="panel"><form class="login" id="loginForm">
-    <h2>Espace animateur</h2>
-    <p class="muted" style="margin:0">Connecte-toi avec le compte animateur créé dans Supabase.</p>
-    <label for="lemail">Adresse e-mail<input id="lemail" type="email" autocomplete="username" required></label>
-    <label for="lpass">Mot de passe<input id="lpass" type="password" autocomplete="current-password" required></label>
+    <h2>${signup?"Créer mon compte animateur":"Espace animateur"}</h2>
+    <p class="muted" style="margin:0">${signup?"Après la création, un animateur déjà inscrit devra valider ton compte (onglet Aide).":"Connecte-toi avec ton compte animateur."}</p>
+    <label for="lemail">Adresse e-mail<input id="lemail" name="lemail" type="email" autocomplete="username" required></label>
+    <label for="lpass">Mot de passe${signup?" (8 caractères minimum)":""}<input id="lpass" name="lpass" type="password" minlength="${signup?8:1}" autocomplete="${signup?"new-password":"current-password"}" required></label>
     <div class="err" role="alert">${esc(adm.err)}</div>
-    <button class="btn primary" type="submit" ${adm.busy?"disabled":""}>${adm.busy?"Connexion…":"Se connecter"}</button></form></div>`;
+    ${acc.msg?`<div class="banner">${esc(acc.msg)}</div>`:""}
+    <button class="btn primary" type="submit" ${adm.busy?"disabled":""}>${adm.busy?"Patiente…":signup?"Créer mon compte":"Se connecter"}</button>
+    <button class="btn" type="button" id="switchMode">${signup?"J'ai déjà un compte : me connecter":"Pas encore de compte ? Créer mon compte"}</button></form></div>`;
   $("#loginForm").addEventListener("submit",async e=>{
-    e.preventDefault(); adm.busy=true; adm.err=""; render();
-    const {data,error}=await sb.auth.signInWithPassword({email:$("#lemail")?.value.trim()||e.target.lemail.value.trim(),password:e.target.lpass.value});
+    e.preventDefault(); const email=e.target.lemail.value.trim(), password=e.target.lpass.value;
+    adm.busy=true; adm.err=""; acc.msg=""; render();
+    if(signup){
+      const {data,error}=await sb.auth.signUp({email,password,options:{emailRedirectTo:location.href.split("#")[0]}});
+      adm.busy=false;
+      if(error){ adm.err=/registered|exists/i.test(error.message)?"Ce compte existe déjà : connecte-toi.":/password/i.test(error.message)?"Mot de passe trop faible : 8 caractères minimum.":"Création impossible : "+error.message; render(); return; }
+      if(data.session) await sb.auth.signOut();
+      acc.mode="login"; acc.msg="Compte créé. Si tu reçois un e-mail de confirmation, clique sur le lien. Demande ensuite à un animateur de valider ton compte dans l'onglet Aide.";
+      render(); return;
+    }
+    const {data,error}=await sb.auth.signInWithPassword({email,password});
+    if(error){ adm.busy=false; adm.err=/confirm/i.test(error.message)?"Confirme d'abord ton adresse avec le lien reçu par e-mail.":/invalid/i.test(error.message)?"E-mail ou mot de passe incorrect.":"Connexion impossible : "+error.message; render(); return; }
+    const {data:ok}=await sb.rpc("is_animateur");
     adm.busy=false;
-    if(error){ adm.err=/invalid/i.test(error.message)?"E-mail ou mot de passe incorrect.":"Connexion impossible : "+error.message; render(); return; }
-    session=data.session; s.view="adm"; loadAll(); startRefresh(); render();
+    if(ok!==true){ await sb.auth.signOut(); adm.err="Ton compte n'est pas encore validé. Demande à un animateur de le valider dans l'onglet Aide."; render(); return; }
+    session=data.session; s.view="adm"; loadAll(); loadTeam(); startRefresh(); render();
   });
 }
-async function logout(){ try{await sb?.auth.signOut();}catch(e){} session=null; votes=[]; paroles=[]; familles=[]; loadState="idle"; stopRefresh(); }
+async function loadTeam(){
+  if(!sb||!session) return;
+  const [p,t]=await Promise.all([sb.rpc("comptes_en_attente"),sb.from("animateurs").select("user_id,email,created_at").order("created_at")]);
+  acc.pending=p.data||[]; acc.team=t.data||[];
+  if(s.view==="adm"&&adm.tab==="set") render();
+}
+async function logout(){ try{await sb?.auth.signOut();}catch(e){} session=null; votes=[]; paroles=[]; familles=[]; acc.pending=[]; acc.team=[]; loadState="idle"; stopRefresh(); }
 
 /* ---------------- Lecture des réponses ---------------- */
 async function fetchAll(table){
@@ -415,6 +436,12 @@ function renderSettings(){
     <div class="famlink"><img class="qr" src="qr-familles.svg" alt="QR code de l'espace familles"><div style="display:flex;flex-direction:column;gap:8px;min-width:0">
       <code style="overflow-wrap:anywhere">${esc(famUrl)}</code><div class="tabs"><button class="btn" id="copyFam" data-url="${esc(famUrl)}">Copier le lien</button><a class="btn" href="familles.html" target="_blank" rel="noopener">Ouvrir</a></div>
       <small class="muted">Le QR code peut être imprimé sur une affiche : clic droit sur l'image › Enregistrer.</small></div></div></div>
+  <div class="panel"><h3>👥 Comptes animateurs</h3>
+    <p class="muted" style="margin:0">Un collègue crée son compte avec « Pas encore de compte ? » sur l'écran de connexion, puis tu le valides ici. Seuls les comptes validés voient les réponses.</p>
+    ${acc.pending.length?`<div class="actlist" style="flex-direction:column;align-items:stretch">${acc.pending.map(u=>`<div class="confirm" style="border-color:var(--peri)"><span style="flex:1;min-width:0;overflow-wrap:anywhere">⏳ <b>${esc(u.email)}</b> <small class="muted">demandé le ${fdate(u.created_at)}</small></span><button class="btn primary" data-valider="${esc(u.id)}">Valider</button><button class="btn danger" data-refuser="${esc(u.id)}">Refuser</button></div>`).join("")}</div>`:`<div class="muted">Aucun compte en attente.</div>`}
+    <div><b>Validés :</b> ${acc.team.map(u=>esc(u.email)).join(", ")||"–"}</div></div>
+  <div class="panel"><h3>🔑 Changer mon mot de passe</h3>
+    <div class="addrow"><input id="newpass" type="password" minlength="8" autocomplete="new-password" placeholder="Nouveau mot de passe (8 caractères min.)" aria-label="Nouveau mot de passe" style="flex:1;min-width:0"><button class="btn primary" id="savePass">Changer</button></div></div>
   <div class="panel"><h3>Comment l'utiliser</h3><ol style="margin:0;padding-left:1.2rem;display:flex;flex-direction:column;gap:6px">
     <li>Ouvre l'appli sur la tablette de la salle. Astuce : « Ajouter à l'écran d'accueil » dans le navigateur.</li>
     <li>L'enfant choisit sa classe, puis une des 4 portes : <b>Mes envies d'activités</b>, <b>J'améliore le centre</b>, <b>J'aimerais découvrir</b> ou <b>Je m'exprime</b> (texte ou dessin au doigt).</li>
@@ -422,7 +449,7 @@ function renderSettings(){
     <li>Si le wifi coupe, les réponses sont gardées sur la tablette (⏳ en haut) et partent toutes seules quand la connexion revient.</li>
     <li>Les envies sont dans l'onglet 📊, les idées, textes et dessins dans l'onglet 💬.</li>
     <li>Pense à <b>te déconnecter</b> avant de rendre la tablette aux enfants.</li>
-    <li>Pour ajouter un animateur : Supabase › Authentication › Users › Add user.</li></ol>
+    <li>Pour ajouter un animateur : il crée son compte depuis l'écran de connexion, puis tu le valides ci-dessus.</li></ol>
     <p class="muted" style="margin:0">Les réponses sont anonymes : on n'enregistre ni nom ni prénom.</p></div>`;
 }
 async function saveConfig(patch){
@@ -458,9 +485,14 @@ document.addEventListener("click",e=>{
   const t=e.target.closest("button,[data-toggle]"); if(!t) return;
   const d=t.dataset;
   if(t.id==="voiceBtn"){voice=!voice;try{localStorage.setItem("envies-voice",voice?"on":"off")}catch(_){ } if(!voice)try{speechSynthesis.cancel()}catch(_){ } render();return;}
-  if(t.id==="adultBtn"){ if(s.view.startsWith("adm")){ logout(); go("classe"); } else {adm.err="";s.view="adm-login";render();} return;}
+  if(t.id==="adultBtn"){ if(s.view.startsWith("adm")){ logout(); go("classe"); } else {adm.err="";acc.msg="";acc.mode="login";s.view="adm-login";render();} return;}
   if(t.id==="logout"){ logout(); go("classe"); toast("Déconnecté."); return; }
-  if(t.id==="refresh"){ loadAll(); return; }
+  if(t.id==="refresh"){ loadAll(); loadTeam(); return; }
+  if(t.id==="switchMode"){ acc.mode=acc.mode==="signup"?"login":"signup"; adm.err=""; acc.msg=""; render(); return; }
+  if(d.valider){ sb.rpc("valider_animateur",{uid:d.valider}).then(({error})=>{toast(error?"Validation impossible.":"Compte validé.");loadTeam();}); return; }
+  if(d.refuser){ sb.rpc("refuser_compte",{uid:d.refuser}).then(({error})=>{toast(error?"Refus impossible.":"Compte supprimé.");loadTeam();}); return; }
+  if(t.id==="savePass"){ const v=$("#newpass").value; if(v.length<8){toast("8 caractères minimum.");return;}
+    sb.auth.updateUser({password:v}).then(({error})=>{ toast(error?"Mot de passe non changé : "+error.message:"Mot de passe changé."); if(!error) $("#newpass").value=""; }); return; }
   if(t.id==="copyFam"){ navigator.clipboard?.writeText(d.url).then(()=>toast("Lien copié."),()=>toast("Copie impossible : sélectionnez le lien à la main.")); return; }
   if(d.say){ say(d.say,true); return;}
   if(d.classe){s.classe=d.classe; go("hub"); return;}
@@ -478,7 +510,7 @@ document.addEventListener("click",e=>{
   if(d.go){go(d.go);return;}
   if(t.id==="send"){sendEnvies();return;}
   if(t.id==="sendP"){sendParole();return;}
-  if(d.tab){adm.tab=d.tab;adm.confirm=false;adm.delp=null;render();return;}
+  if(d.tab){adm.tab=d.tab;adm.confirm=false;adm.delp=null;if(d.tab==="set")loadTeam();render();return;}
   if(t.id==="askDel"){adm.confirm=true;render();return;}
   if(t.id==="noDel"){adm.confirm=false;render();return;}
   if(t.id==="doDel"){deleteFiltered();return;}

@@ -205,3 +205,4 @@ a.go{color:#fff}
 .srow .v{text-align:right;font-weight:700;font-variant-numeric:tabular-nums}
 @media (max-width:560px){.srow{grid-template-columns:minmax(0,1fr) 3.4rem}.srow .stack{grid-column:1/-1;grid-row:2}}
 .qr{width:160px;height:160px;background:#fff;padding:8px;border-radius:12px}
+a.btn{color:inherit;text-decoration:none;display:inline-flex;align-items:center}
