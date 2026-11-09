@@ -45,7 +45,7 @@ const sb=configured?window.supabase.createClient(CFG.supabaseUrl,CFG.supabaseKey
 let voice=true, pen=PENS[0], session=null;
 let votes=[], paroles=[], familles=[], loadState="idle", lastLoad=0, refreshTimer=null;
 let config={added:{peri:[],mer:[],midi:[]},hidden:[]};
-const fresh=()=>({choix:[],humeur:null,moment:null,tags:[],texte:"",dessin:null,pmoment:null});
+const fresh=()=>({autre:"",choix:[],humeur:null,moment:null,tags:[],texte:"",dessin:null,pmoment:null});
 let s={view:"accueil",classe:null,...fresh()};
 let acc={mode:"login",msg:"",pending:[],team:[]};
 let adm={tab:"res",fm:"all",fc:"all",fp:"all",pt:"all",ft:"all",confirm:false,delp:null,err:"",busy:false};
@@ -59,7 +59,7 @@ function say(t,force){ if(!voice&&!force) return; try{ const u=new SpeechSynthes
 function activities(m){
   const base=BASE[m].map(([id,e,l])=>({id:m+":"+id,e,l,custom:false}));
   const add=(config.added?.[m]||[]).map(a=>({id:a.id,e:a.e,l:a.l,custom:true}));
-  return [...base,...add];
+  return [...base,...add,{id:m+":autre",e:"➕",l:"Autre chose",custom:false,autre:true}];
 }
 const visibleActs=m=>activities(m).filter(a=>!(config.hidden||[]).includes(a.id));
 function actById(id){for(const m of ["peri","mer","midi"]){const a=activities(m).find(x=>x.id===id); if(a) return a;} return {id,e:"❔",l:id.split(":").pop()};}
@@ -173,11 +173,15 @@ function render(){
     const n=s.choix.length;
     app.innerHTML=`<div class="wrap kid">${nav()}${q("Quelles activités tu as envie de faire ?",`Choisis jusqu'à ${MAXCHOIX} activités.`)}
       <div class="grid acts">${acts.map(a=>{const i=s.choix.indexOf(a.id);return `<button class="big act" data-act="${esc(a.id)}" aria-pressed="${i>=0}"><span class="badge" aria-hidden="true">✓</span><span class="pic" aria-hidden="true">${esc(a.e)}</span><span class="name">${esc(a.l)}</span></button>`}).join("")}</div>
+      ${s.choix.some(id=>id.endsWith(":autre"))?`<div class="idea"><label for="autreTxt">➕ Quelle autre activité ?</label>
+        <small>Un grand peut l'écrire pour toi.</small>
+        <input id="autreTxt" maxlength="120" placeholder="Par exemple : faire une cabane" value="${esc(s.autre)}" style="font-size:1.2rem"></div>`:""}
       <div class="bar"><button class="back" data-go="moment">← Retour</button>
         <span class="count" aria-label="${n} choix sur ${MAXCHOIX}">${n} / ${MAXCHOIX}</span>
         <button class="go" data-go="humeur" ${n?"":"disabled"}>J'ai fini ! ✓</button></div></div>`;
   }
-  else if(s.view==="humeur"){
+  if(s.view==="choix"&&$("#autreTxt")) $("#autreTxt").addEventListener("input",e=>s.autre=e.target.value);
+  if(s.view==="humeur"){
     app.innerHTML=`<div class="wrap kid">${nav()}${q("Tu aimes venir au centre ?","Tu peux aussi passer cette question.")}
       <div class="grid moods">${MOODS.map(m=>`<button class="big mood" data-mood="${m.id}" aria-pressed="${s.humeur===m.id}"><span class="pic" aria-hidden="true">${m.pic}</span><span class="name">${m.lbl}</span></button>`).join("")}</div>
       <div class="bar"><button class="back" data-go="choix">← Retour</button><button class="go" id="send">Envoyer 🚀</button></div></div>`;
@@ -260,7 +264,7 @@ async function save(table,row,btn){
   timer=setTimeout(()=>{ if(s.view==="merci") go("hub"); },7000);
 }
 function sendEnvies(){
-  save("envies",{classe:s.classe,cycle:cycleOf(s.classe),moment:s.moment,activites:s.choix.slice(),humeur:s.humeur||null},$("#send"));
+  save("envies",{classe:s.classe,cycle:cycleOf(s.classe),moment:s.moment,activites:s.choix.slice(),humeur:s.humeur||null,autre:s.choix.some(id=>id.endsWith(":autre"))?(s.autre||"").trim().slice(0,200):""},$("#send"));
 }
 function sendParole(){
   const t=s.view, txt=(s.texte||"").trim();
@@ -395,6 +399,9 @@ function renderAdmin(app){
     <div class="cols">
       <div class="panel"><h3>Les activités les plus demandées</h3><p class="muted" style="margin:0;font-size:.9rem">Nombre d'enfants qui ont choisi l'activité (% des enfants qui ont répondu).</p>${rank}</div>
       <div class="panel"><h3>Ils aiment venir ?</h3>${moodbar}</div></div>
+    <div class="panel"><h3>➕ Autres activités demandées par les enfants</h3>
+      ${(()=>{const L=list.filter(v=>v.autre);return L.length?`<div class="pcards">${L.slice(0,150).map(v=>`<article class="pcard"><div class="meta"><b>${esc(v.classe)}</b> · ${esc(momentLbl(v.moment))} · ${fdate(v.at)}</div><div class="txt">${esc(v.autre)}</div></article>`).join("")}</div>`
+        :`<div class="empty">Pas encore d'autre activité proposée pour ces filtres.</div>`;})()}</div>
     <div class="panel"><h3>Réponses par classe et par moment</h3><p class="muted" style="margin:0;font-size:.9rem">Suit uniquement le filtre de période.</p>${table}</div>
     <div class="panel"><h3>Nouvelle période</h3><p class="muted" style="margin:0">Pour repartir de zéro (nouveau trimestre, nouvelles vacances), efface les envies affichées avec les filtres ci-dessus.</p>${confirm}</div></div>`;
 }
@@ -544,12 +551,13 @@ document.addEventListener("click",e=>{
   if(t.id==="copyFam"){ navigator.clipboard?.writeText(d.url).then(()=>toast("Lien copié."),()=>toast("Copie impossible : sélectionnez le lien à la main.")); return; }
   if(d.say){ say(d.say,true); return;}
   if(d.classe){s.classe=d.classe; go("hub"); return;}
-  if(d.moment){s.moment=d.moment; s.choix=[]; go("choix"); return;}
+  if(d.moment){s.moment=d.moment; s.choix=[]; s.autre=""; go("choix"); return;}
   if(d.act){const i=s.choix.indexOf(d.act);
     if(i>=0) s.choix.splice(i,1);
     else if(s.choix.length>=MAXCHOIX){ say("Tu as déjà choisi trois activités. Enlève-en une pour changer."); toast(`Tu as déjà ${MAXCHOIX} choix. Touche-en un pour l'enlever.`); return;}
-    else {s.choix.push(d.act); say(actById(d.act).l);}
-    render(); return;}
+    else {s.choix.push(d.act); say(d.act.endsWith(":autre")?"Autre chose. Dis à un grand quelle activité tu voudrais.":actById(d.act).l);}
+    render(); if(d.act.endsWith(":autre")&&s.choix.includes(d.act)) setTimeout(()=>{const el=$("#autreTxt"); if(el){el.scrollIntoView({block:"center",behavior:"smooth"}); el.focus({preventScroll:true});}},50);
+    return;}
   if(d.mood){s.humeur=s.humeur===d.mood?null:d.mood; if(s.humeur) say(MOODS.find(x=>x.id===d.mood).lbl); render(); return;}
   if(d.tag){const i=s.tags.indexOf(d.tag); if(i>=0) s.tags.splice(i,1); else {s.tags.push(d.tag); say(tagById(s.view,d.tag).l);} render(); return;}
   if(d.pmoment){s.pmoment=s.pmoment===d.pmoment?null:d.pmoment; if(s.pmoment) say(momentLbl(s.pmoment)); render(); return;}

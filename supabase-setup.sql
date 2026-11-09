@@ -174,3 +174,8 @@ grant execute on function public.comptes_en_attente(), public.valider_animateur(
 
 -- Le tout premier animateur s'ajoute à la main, après avoir créé son compte :
 -- insert into public.animateurs (user_id, email) select id, email from auth.users where email = 'VOTRE@EMAIL';
+
+-- =====================================================================
+-- 7. Activité « Autre chose » : l'enfant précise laquelle
+-- =====================================================================
+alter table public.envies add column if not exists autre text not null default '' check (char_length(autre) <= 200);
