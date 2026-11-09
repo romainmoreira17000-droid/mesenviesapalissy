@@ -45,7 +45,16 @@ const PENS=["#1F2B3A","#E53935","#FB8C00","#FDD835","#43A047","#1E88E5","#8E24AA
 /* ---------------- Connexion Supabase ---------------- */
 const CFG=window.ENVIES_CONFIG||{};
 const configured=!!(CFG.supabaseUrl&&CFG.supabaseKey&&window.supabase);
-const sb=configured?window.supabase.createClient(CFG.supabaseUrl,CFG.supabaseKey,{auth:{persistSession:false,autoRefreshToken:true}}):null;
+/* « Rester connecté » : la session n'est gardée sur l'appareil que si l'animateur l'a demandé (téléphone perso).
+   Sinon (tablette des enfants) elle reste en mémoire et disparaît à la fermeture. */
+let remember=false; try{ remember=localStorage.getItem("envies-remember")==="1"; }catch(e){}
+const memStore={};
+const authStorage={
+  getItem:k=>{ try{ return remember?localStorage.getItem(k):(k in memStore?memStore[k]:null); }catch(e){ return memStore[k]??null; } },
+  setItem:(k,v)=>{ try{ if(remember) localStorage.setItem(k,v); else memStore[k]=v; }catch(e){ memStore[k]=v; } },
+  removeItem:k=>{ delete memStore[k]; try{ localStorage.removeItem(k); }catch(e){} }};
+function setRemember(v){ remember=!!v; try{ v?localStorage.setItem("envies-remember","1"):localStorage.removeItem("envies-remember"); }catch(e){} }
+const sb=configured?window.supabase.createClient(CFG.supabaseUrl,CFG.supabaseKey,{auth:{persistSession:true,autoRefreshToken:true,storage:authStorage,storageKey:"envies-auth"}}):null;
 
 /* ---------------- État ---------------- */
 let voice=true, pen=PENS[0], session=null;
@@ -343,6 +352,7 @@ function renderLogin(app){
     <p class="muted" style="margin:0">${signup?"Après la création, un animateur déjà inscrit devra valider ton compte (onglet Aide).":"Connecte-toi avec ton compte animateur."}</p>
     <label for="lemail">Adresse e-mail<input id="lemail" name="lemail" type="email" autocomplete="username" required></label>
     <label for="lpass">Mot de passe${signup?" (8 caractères minimum)":""}<input id="lpass" name="lpass" type="password" minlength="${signup?8:1}" autocomplete="${signup?"new-password":"current-password"}" required></label>
+    ${signup?"":`<label class="remember" for="lremember"><input type="checkbox" id="lremember" name="lremember" ${remember?"checked":""}> <span>Rester connecté sur cet appareil<br><small class="muted">Sur votre téléphone perso. Pas sur la tablette des enfants.</small></span></label>`}
     <div class="err" role="alert">${esc(adm.err)}</div>
     ${acc.msg?`<div class="banner">${esc(acc.msg)}</div>`:""}
     <button class="btn primary" type="submit" ${adm.busy?"disabled":""}>${adm.busy?"Patiente…":signup?"Créer mon compte":"Se connecter"}</button>
@@ -358,6 +368,7 @@ function renderLogin(app){
       acc.mode="login"; acc.msg="Compte créé. Si tu reçois un e-mail de confirmation, clique sur le lien. Demande ensuite à un animateur de valider ton compte dans l'onglet Aide.";
       render(); return;
     }
+    setRemember(!!e.target.lremember?.checked);
     const {data,error}=await sb.auth.signInWithPassword({email,password});
     if(error){ adm.busy=false; adm.err=/confirm/i.test(error.message)?"Confirme d'abord ton adresse avec le lien reçu par e-mail.":/invalid/i.test(error.message)?"E-mail ou mot de passe incorrect.":"Connexion impossible : "+error.message; render(); return; }
     const {data:ok}=await sb.rpc("is_animateur");
@@ -373,7 +384,7 @@ async function loadTeam(){
   acc.pending=p.data||[]; acc.team=t.data||[]; acc.ntfy=n.error?null:(n.data||null);
   if(s.view==="adm"&&adm.tab==="set") render();
 }
-async function logout(){ try{await sb?.auth.signOut();}catch(e){} session=null; votes=[]; paroles=[]; familles=[]; emotions=[]; acc.pending=[]; acc.team=[]; loadState="idle"; stopRefresh(); }
+async function logout(){ try{await sb?.auth.signOut();}catch(e){} setRemember(false); session=null; votes=[]; paroles=[]; familles=[]; emotions=[]; acc.pending=[]; acc.team=[]; loadState="idle"; stopRefresh(); }
 
 /* ---------------- Lecture des réponses ---------------- */
 async function fetchAll(table){
@@ -698,7 +709,11 @@ document.addEventListener("click",e=>{
   const t=e.target.closest("button,[data-toggle]"); if(!t) return;
   const d=t.dataset;
   if(t.id==="voiceBtn"){voice=!voice;try{localStorage.setItem("envies-voice",voice?"on":"off")}catch(_){ } if(!voice)try{speechSynthesis.cancel()}catch(_){ } render();return;}
-  if(t.id==="adultBtn"){ if(s.view.startsWith("adm")){ logout(); go("accueil"); } else {adm.err="";acc.msg="";acc.mode="login";s.view="adm-login";render();} return;}
+  if(t.id==="adultBtn"){
+    if(s.view.startsWith("adm")){ if(!(remember&&session)) logout(); go("accueil"); }
+    else if(session){ s.view="adm"; loadAll(); loadTeam(); render(); window.scrollTo({top:0}); }
+    else {adm.err="";acc.msg="";acc.mode="login";s.view="adm-login";render();}
+    return;}
   if(t.id==="logout"){ logout(); go("accueil"); toast("Déconnecté."); return; }
   if(t.id==="refresh"){ loadAll(); loadTeam(); return; }
   if(t.id==="switchMode"){ acc.mode=acc.mode==="signup"?"login":"signup"; adm.err=""; acc.msg=""; render(); return; }
@@ -757,3 +772,9 @@ if(CFG.nomCentre){ const t=`Mes envies à ${CFG.nomCentre}`; $("#appTitle").text
 if(!configured){ const b=$("#setupBanner"); b.hidden=false; b.textContent="L'appli n'est pas encore reliée à Supabase : les réponses restent sur cette tablette en attendant. Remplis le fichier config.js (voir le README)."; }
 render(); showQueue();
 loadConfig(); flushQueue(); setInterval(flushQueue,60000);
+/* connexion gardée (« Rester connecté ») : on la reprend sans redemander le mot de passe */
+if(sb&&remember) sb.auth.getSession().then(async({data})=>{
+  if(!data?.session){ setRemember(false); return; }
+  const {data:ok}=await sb.rpc("is_animateur");
+  if(ok===true){ session=data.session; startRefresh(); render(); } else { await sb.auth.signOut(); setRemember(false); }
+}).catch(()=>{});
