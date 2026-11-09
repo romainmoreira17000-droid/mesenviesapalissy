@@ -106,7 +106,7 @@ function render(){
       ${q("Bonjour ! Qui es-tu ?")}
       <div class="grid choose">
         <button class="big who kids" data-go="classe"><span class="pic" aria-hidden="true">🧒</span><span class="lbl">Enfants</span><span class="sub">Je donne mes envies et mes idées</span></button>
-        <a class="big who fams" href="familles.html?app"><span class="pic" aria-hidden="true">👨‍👩‍👧</span><span class="lbl">Familles</span><span class="sub">Parents : votre avis sur le centre</span></a>
+        <a class="big who fams" href="familles.html?app"><span class="pic duo" aria-hidden="true">👩🧒</span><span class="lbl">Familles</span><span class="sub">Parents : votre avis sur le centre</span></a>
       </div></div>`;
     return;
   }
