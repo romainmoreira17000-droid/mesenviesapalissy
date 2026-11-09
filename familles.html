@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Espace familles</title>
+<meta name="theme-color" content="#EAF2F4">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Andika:wght@400;700&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body class="fam">
+<div class="wrap">
+  <header class="top">
+    <div class="logo"><div class="sun"><span></span></div><h1 id="famTitle">Espace familles</h1></div>
+  </header>
+  <div class="banner" id="setupBanner" hidden></div>
+  <main id="app" aria-live="polite"></main>
+  <p class="muted fam-foot">Vos réponses sont anonymes, sauf si vous laissez vos coordonnées pour avoir une réponse. Elles sont lues uniquement par l'équipe d'animation.</p>
+</div>
+<div class="toast" id="toast" hidden></div>
+<script src="config.js"></script>
+<script src="familles-data.js"></script>
+<script src="vendor/supabase.js"></script>
+<script src="familles.js"></script>
+</body>
+</html>

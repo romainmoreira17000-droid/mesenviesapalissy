@@ -43,11 +43,11 @@ const sb=configured?window.supabase.createClient(CFG.supabaseUrl,CFG.supabaseKey
 
 /* ---------------- État ---------------- */
 let voice=true, pen=PENS[0], session=null;
-let votes=[], paroles=[], loadState="idle", lastLoad=0, refreshTimer=null;
+let votes=[], paroles=[], familles=[], loadState="idle", lastLoad=0, refreshTimer=null;
 let config={added:{peri:[],mer:[],midi:[]},hidden:[]};
 const fresh=()=>({choix:[],humeur:null,moment:null,tags:[],texte:"",dessin:null,pmoment:null});
 let s={view:"classe",classe:null,...fresh()};
-let adm={tab:"res",fm:"all",fc:"all",fp:"all",pt:"all",confirm:false,delp:null,err:"",busy:false};
+let adm={tab:"res",fm:"all",fc:"all",fp:"all",pt:"all",ft:"all",confirm:false,delp:null,err:"",busy:false};
 let timer=null;
 try{ if(localStorage.getItem("envies-voice")==="off") voice=false; }catch(e){}
 
@@ -107,7 +107,8 @@ function render(){
       <div class="cycle-title">Maternelle</div>
       <div class="grid classes">${CLASSES.filter(c=>c.cyc==="mat").map(btn).join("")}</div>
       <div class="cycle-title">Élémentaire</div>
-      <div class="grid classes">${CLASSES.filter(c=>c.cyc==="elem").map(btn).join("")}</div></div>`;
+      <div class="grid classes">${CLASSES.filter(c=>c.cyc==="elem").map(btn).join("")}</div>
+      <div class="homefam"><a class="back" href="familles.html?app">👪 Espace familles</a></div></div>`;
   }
   else if(s.view==="hub"){
     const door=(cls,go,pic,lbl,sub)=>`<button class="big door ${cls}" data-go="${go}"><span class="pic" aria-hidden="true">${pic}</span><span class="lbl">${lbl}</span><span class="sub">${sub}</span></button>`;
@@ -240,7 +241,7 @@ function renderLogin(app){
     session=data.session; s.view="adm"; loadAll(); startRefresh(); render();
   });
 }
-async function logout(){ try{await sb?.auth.signOut();}catch(e){} session=null; votes=[]; paroles=[]; loadState="idle"; stopRefresh(); }
+async function logout(){ try{await sb?.auth.signOut();}catch(e){} session=null; votes=[]; paroles=[]; familles=[]; loadState="idle"; stopRefresh(); }
 
 /* ---------------- Lecture des réponses ---------------- */
 async function fetchAll(table){
@@ -257,7 +258,7 @@ async function loadAll(){
   if(loadState!=="ok") loadState="loading";
   if(s.view==="adm") render();
   try{
-    [votes,paroles]=await Promise.all([fetchAll("envies"),fetchAll("paroles")]);
+    [votes,paroles,familles]=await Promise.all([fetchAll("envies"),fetchAll("paroles"),fetchAll("familles")]);
     loadState="ok"; lastLoad=Date.now();
   }catch(e){ console.error(e); loadState="err"; }
   if(s.view==="adm") render();
@@ -291,12 +292,14 @@ function renderAdmin(app){
   const tabs=`<div class="adminbar"><div class="tabs">
     <button class="chip" data-tab="res" aria-pressed="${adm.tab==="res"}">📊 Envies d'activités</button>
     <button class="chip" data-tab="par" aria-pressed="${adm.tab==="par"}">💬 Paroles des enfants</button>
+    <button class="chip" data-tab="fam" aria-pressed="${adm.tab==="fam"}">👪 Familles</button>
     <button class="chip" data-tab="acts" aria-pressed="${adm.tab==="acts"}">🧩 Activités proposées</button>
     <button class="chip" data-tab="set" aria-pressed="${adm.tab==="set"}">⚙️ Aide</button></div>
     <div class="tabs"><span class="muted" style="font-size:.85rem;align-self:center">Mis à jour à ${upd}</span><button class="chip" id="refresh">↻ Actualiser</button><button class="chip" id="logout">Se déconnecter</button></div></div>`;
   if(adm.tab==="acts") return app.innerHTML=`<div class="wrap">${tabs}${renderActsAdmin()}</div>`;
   if(adm.tab==="set") return app.innerHTML=`<div class="wrap">${tabs}${renderSettings()}</div>`;
   if(adm.tab==="par") return app.innerHTML=`<div class="wrap">${tabs}${renderParoles()}</div>`;
+  if(adm.tab==="fam") return app.innerHTML=`<div class="wrap">${tabs}${renderFamilles()}</div>`;
 
   const filters=`<div class="filters"><label>Moment ${sel("fm",adm.fm,[["all","Tous les moments"],...MOMENTS.map(m=>[m.id,m.lbl])])}</label>${fClasse()}${fPeriode()}</div>`;
   if(loadState!=="ok") return app.innerHTML=`<div class="wrap">${tabs}<div class="panel">${filters}<div class="empty">${stateMsg()}</div></div></div>`;
@@ -352,6 +355,53 @@ function renderParoles(){
       ${list.length?`<div class="pcards">${list.slice(0,150).map(card).join("")}</div>`:`<div class="empty">Rien pour ces filtres. Les idées, textes et dessins des enfants apparaîtront ici.</div>`}</div>
     <div class="panel"><h3>Nouvelle période</h3><p class="muted" style="margin:0">Efface les paroles affichées avec les filtres ci-dessus.</p>${confirm}</div>`;
 }
+function filteredFamilles(useType=true){const st=periodStart();return familles.filter(r=>(!useType||adm.ft==="all"||r.type===adm.ft)&&(r.at||0)>=st);}
+function renderFamilles(){
+  const {TEMPS,ITEMS,NOTES,NOTE_COL,RECO,TAGS,TYPES}=window.FAM;
+  const filters=`<div class="filters"><label>Partie ${sel("ft",adm.ft,[["all","Toutes"],...Object.entries(TYPES).map(([k,t])=>[k,t.pic+" "+t.lbl])])}</label>${fPeriode()}</div>`;
+  if(loadState!=="ok") return `<div class="panel">${filters}<div class="empty">${stateMsg()}</div></div>`;
+  const all=filteredFamilles(false), list=filteredFamilles();
+  const sat=all.filter(r=>r.type==="satisfaction");
+  const pctSat=arr=>{const v=arr.filter(x=>x>0);return v.length?Math.round(v.filter(x=>x>=3).length/v.length*100):null;};
+  const glob=pctSat(sat.map(r=>r.global||0));
+  const reco=RECO.map(([id,e,l])=>({id,e,l,c:sat.filter(r=>r.recommande===id).length})); const rt=reco.reduce((a,b)=>a+b.c,0);
+  const stack=vals=>{const v=vals.filter(x=>x>0),n=v.length; if(!n) return `<div class="stack"></div>`;
+    return `<div class="stack">${[4,3,2,1].map(k=>{const c=v.filter(x=>x===k).length;return c?`<div style="width:${c/n*100}%;background:${NOTE_COL[k]}" title="${NOTES.find(x=>x[0]===k)[2]} : ${c}"></div>`:""}).join("")}</div>`;};
+  const rows=[["global","Satisfaction générale",sat.map(r=>r.global||0)],...ITEMS.map(([id,l])=>[id,l,sat.map(r=>(r.notes||{})[id]||0)])];
+  const satHtml=sat.length?`<div class="fam-legend">${NOTES.map(([v,e,l])=>`<span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:${NOTE_COL[v]};vertical-align:-1px"></span> ${l}</span>`).join("")}<span>% = part de satisfaits (sans compter « sans avis »)</span></div>
+    <div class="rank">${rows.map(([id,l,v])=>{const p=pctSat(v);return `<div class="srow"><span style="${id==="global"?"font-weight:700":""}">${esc(l)}</span>${stack(v)}<span class="v">${p===null?"–":p+" %"}</span></div>`}).join("")}</div>`
+    :`<div class="empty">Pas encore de questionnaire de satisfaction.</div>`;
+  const tc={}; all.filter(r=>r.type==="amelioration").forEach(r=>(r.tags||[]).forEach(t=>tc[t]=(tc[t]||0)+1));
+  const nAm=all.filter(r=>r.type==="amelioration").length;
+  const tagHtml=rankHtml(Object.entries(tc).sort((a,b)=>b[1]-a[1]),nAm||1,id=>{const t=TAGS.find(x=>x[0]===id)||["","•",id];return {e:t[1],l:t[2]};},"var(--peri)")||`<div class="empty">Pas encore de proposition d'amélioration.</div>`;
+  const tps={}; sat.concat(all.filter(r=>r.type==="amelioration")).forEach(r=>(r.temps||[]).forEach(t=>tps[t]=(tps[t]||0)+1));
+  const withText=list.filter(r=>r.texte||r.idees||r.savoir||r.contact);
+  const card=r=>{const T=TYPES[r.type]||TYPES.libre;
+    const tl=(r.temps||[]).map(t=>(TEMPS.find(x=>x[0]===t)||[0,"",t])[2]).join(", ");
+    return `<article class="pcard">
+      <div class="meta"><span class="pill" style="background:${T.col}">${T.pic} ${esc(T.lbl)}</span>${fdate(r.at)}${r.global?` · ${NOTES.find(x=>x[0]===r.global)[1]}`:""}</div>
+      ${tl||(r.niveaux||[]).length?`<div class="meta">${esc(tl)}${(r.niveaux||[]).length?` · ${esc(r.niveaux.join(", "))}`:""}</div>`:""}
+      ${(r.tags||[]).length?`<div class="tg">${r.tags.map(t=>{const x=TAGS.find(y=>y[0]===t)||["","•",t];return `<span>${x[1]} ${esc(x[2])}</span>`}).join("")}</div>`:""}
+      ${r.texte?`<div class="txt">${esc(r.texte)}</div>`:""}
+      ${r.idees?`<div class="txt"><b>💡 Idées :</b> ${esc(r.idees)}</div>`:""}
+      ${r.savoir?`<div class="txt"><b>🎁 Savoir-faire à partager :</b> ${esc(r.savoir)}</div>`:""}
+      ${r.contact?`<div class="txt" style="background:var(--surface);border-radius:10px;padding:6px 10px"><b>📞 Souhaite une réponse :</b> ${esc(r.contact)}</div>`:""}
+      <div class="foot">${adm.delp===r.id?`<span class="muted" style="font-size:.85rem;align-self:center">Effacer ?</span><button class="btn small danger" data-delok="${esc(r.id)}">Oui</button><button class="btn small" data-delno="1">Non</button>`:`<button class="btn small" data-delp="${esc(r.id)}">Effacer</button>`}</div></article>`;};
+  const confirm=adm.confirm?`<div class="confirm"><span>Effacer définitivement les <b>${list.length}</b> réponses de familles affichées ?</span><button class="btn danger" id="doDel">Oui, effacer</button><button class="btn" id="noDel">Annuler</button></div>`
+    :`<div><button class="btn danger" id="askDel" ${list.length?"":"disabled"}>Effacer ces ${list.length} réponses…</button></div>`;
+  return `<div class="panel">${filters}
+      <div class="kpis">${Object.entries(TYPES).map(([k,t])=>`<div class="kpi"><b>${all.filter(r=>r.type===k).length}</b><span>${t.pic} ${t.lbl}</span></div>`).join("")}
+        <div class="kpi"><b>${glob===null?"–":glob+" %"}</b><span>de familles satisfaites</span></div>
+        <div class="kpi"><b>${rt?Math.round(reco[0].c/rt*100)+" %":"–"}</b><span>recommanderaient le centre</span></div>
+        <div class="kpi"><b>${all.filter(r=>r.contact).length}</b><span>attendent une réponse</span></div></div></div>
+    <div class="panel"><h3>⭐ Satisfaction des familles</h3>${satHtml}
+      ${rt?`<div class="muted" style="font-size:.9rem">Recommanderaient le centre : ${reco.map(r=>`${r.e} ${r.l} ${r.c}`).join(" · ")}</div>`:""}
+      ${Object.keys(tps).length?`<div class="muted" style="font-size:.9rem">Temps fréquentés : ${TEMPS.map(([id,e,l])=>tps[id]?`${e} ${l} ${tps[id]}`:"").filter(Boolean).join(" · ")}</div>`:""}</div>
+    <div class="panel"><h3>🔧 Ce que les familles veulent améliorer</h3>${tagHtml}</div>
+    <div class="panel"><h3>Commentaires, idées et messages</h3><p class="muted" style="margin:0;font-size:.9rem">Les plus récents d'abord. Les coordonnées laissées servent uniquement à répondre.</p>
+      ${withText.length?`<div class="pcards">${withText.slice(0,150).map(card).join("")}</div>`:`<div class="empty">Pas encore de commentaire pour ces filtres.</div>`}</div>
+    <div class="panel"><h3>Nouvelle période</h3><p class="muted" style="margin:0">Efface les réponses de familles affichées avec les filtres ci-dessus.</p>${confirm}</div>`;
+}
 function renderActsAdmin(){
   return MOMENTS.map(m=>`<div class="panel"><h3>${m.pic} ${m.lbl}</h3>
     <p class="muted" style="margin:0;font-size:.9rem">Touche une activité pour la cacher ou la remettre. Les activités ajoutées peuvent être retirées.</p>
@@ -359,7 +409,13 @@ function renderActsAdmin(){
     <div class="addrow"><input class="emo" id="e-${m.id}" maxlength="4" placeholder="🙂" aria-label="Pictogramme"><input id="l-${m.id}" maxlength="40" placeholder="Nouvelle activité (ex. Atelier cirque)" aria-label="Nom de l'activité"><button class="btn primary" data-add="${m.id}">Ajouter</button></div></div>`).join("");
 }
 function renderSettings(){
-  return `<div class="panel"><h3>Comment l'utiliser</h3><ol style="margin:0;padding-left:1.2rem;display:flex;flex-direction:column;gap:6px">
+  const famUrl=new URL("familles.html",location.href).href;
+  return `<div class="panel"><h3>👪 Lien de l'espace familles</h3>
+    <p class="muted" style="margin:0">À envoyer aux parents (mail, ENT, affiche). Ils répondent depuis leur téléphone, sans compte.</p>
+    <div class="famlink"><img class="qr" src="qr-familles.svg" alt="QR code de l'espace familles"><div style="display:flex;flex-direction:column;gap:8px;min-width:0">
+      <code style="overflow-wrap:anywhere">${esc(famUrl)}</code><div class="tabs"><button class="btn" id="copyFam" data-url="${esc(famUrl)}">Copier le lien</button><a class="btn" href="familles.html" target="_blank" rel="noopener">Ouvrir</a></div>
+      <small class="muted">Le QR code peut être imprimé sur une affiche : clic droit sur l'image › Enregistrer.</small></div></div></div>
+  <div class="panel"><h3>Comment l'utiliser</h3><ol style="margin:0;padding-left:1.2rem;display:flex;flex-direction:column;gap:6px">
     <li>Ouvre l'appli sur la tablette de la salle. Astuce : « Ajouter à l'écran d'accueil » dans le navigateur.</li>
     <li>L'enfant choisit sa classe, puis une des 4 portes : <b>Mes envies d'activités</b>, <b>J'améliore le centre</b>, <b>J'aimerais découvrir</b> ou <b>Je m'exprime</b> (texte ou dessin au doigt).</li>
     <li>Le bouton 🔊 lit les questions et les images : pratique pour les maternelles.</li>
@@ -385,9 +441,10 @@ async function deleteIds(table,ids){
   return ok;
 }
 async function deleteFiltered(){
-  const par=adm.tab==="par", list=par?filteredParoles():filteredVotes(); adm.confirm=false;
+  const table=adm.tab==="par"?"paroles":adm.tab==="fam"?"familles":"envies";
+  const list=table==="paroles"?filteredParoles():table==="familles"?filteredFamilles():filteredVotes(); adm.confirm=false;
   toast("Effacement en cours…"); render();
-  const ok=await deleteIds(par?"paroles":"envies",list.map(v=>v.id));
+  const ok=await deleteIds(table,list.map(v=>v.id));
   toast(ok+" effacées."); loadAll();
 }
 async function loadConfig(){
@@ -404,6 +461,7 @@ document.addEventListener("click",e=>{
   if(t.id==="adultBtn"){ if(s.view.startsWith("adm")){ logout(); go("classe"); } else {adm.err="";s.view="adm-login";render();} return;}
   if(t.id==="logout"){ logout(); go("classe"); toast("Déconnecté."); return; }
   if(t.id==="refresh"){ loadAll(); return; }
+  if(t.id==="copyFam"){ navigator.clipboard?.writeText(d.url).then(()=>toast("Lien copié."),()=>toast("Copie impossible : sélectionnez le lien à la main.")); return; }
   if(d.say){ say(d.say,true); return;}
   if(d.classe){s.classe=d.classe; go("hub"); return;}
   if(d.moment){s.moment=d.moment; s.choix=[]; go("choix"); return;}
@@ -426,14 +484,14 @@ document.addEventListener("click",e=>{
   if(t.id==="doDel"){deleteFiltered();return;}
   if(d.delp){adm.delp=d.delp;render();return;}
   if(d.delno){adm.delp=null;render();return;}
-  if(d.delok){const id=d.delok; adm.delp=null; deleteIds("paroles",[id]).then(n=>{toast(n?"Effacé.":"Pas effacé. Réessaie.");loadAll();}); return;}
+  if(d.delok){const id=d.delok; adm.delp=null; deleteIds(adm.tab==="fam"?"familles":"paroles",[id]).then(n=>{toast(n?"Effacé.":"Pas effacé. Réessaie.");loadAll();}); return;}
   if(d.remove){e.stopPropagation(); const added={...config.added}; for(const m in added) added[m]=(added[m]||[]).filter(a=>a.id!==d.remove); saveConfig({added,hidden:(config.hidden||[]).filter(h=>h!==d.remove)}); return;}
   if(d.toggle){const h=new Set(config.hidden||[]); h.has(d.toggle)?h.delete(d.toggle):h.add(d.toggle); saveConfig({hidden:[...h]}); return;}
   if(d.add){const m=d.add,l=$("#l-"+m).value.trim(),em=$("#e-"+m).value.trim()||"⭐"; if(!l){toast("Écris le nom de l'activité.");return;}
     const added={peri:[],mer:[],midi:[],...config.added}; added[m]=[...(added[m]||[]),{id:m+":c"+Date.now().toString(36),e:em,l:l.slice(0,40)}]; saveConfig({added}); return;}
 });
 document.addEventListener("keydown",e=>{ if((e.key==="Enter"||e.key===" ")&&e.target.dataset?.toggle){e.preventDefault();e.target.click();} });
-document.addEventListener("change",e=>{ if(["fm","fc","fp","pt"].includes(e.target.id)){adm[e.target.id]=e.target.value;adm.confirm=false;render();} });
+document.addEventListener("change",e=>{ if(["fm","fc","fp","pt","ft"].includes(e.target.id)){adm[e.target.id]=e.target.value;adm.confirm=false;render();} });
 window.addEventListener("online",flushQueue);
 
 /* ---------------- Démarrage ---------------- */

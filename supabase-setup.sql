@@ -70,3 +70,36 @@ create policy "animateurs modifient les réglages" on public.reglages for update
 
 create index if not exists envies_created_at_idx  on public.envies  (created_at desc);
 create index if not exists paroles_created_at_idx on public.paroles (created_at desc);
+
+-- =====================================================================
+-- 5. Espace familles (questionnaire de satisfaction, améliorations, expression libre)
+-- =====================================================================
+create table if not exists public.familles (
+  id          uuid primary key default gen_random_uuid(),
+  created_at  timestamptz not null default now(),
+  type        text not null check (type in ('satisfaction','amelioration','libre')),
+  temps       text[] not null default '{}' check (cardinality(temps) <= 6),
+  niveaux     text[] not null default '{}' check (cardinality(niveaux) <= 8),
+  notes       jsonb not null default '{}'::jsonb check (jsonb_typeof(notes) = 'object' and octet_length(notes::text) <= 2000),
+  global      int check (global between 1 and 4),
+  recommande  text check (recommande in ('oui','peutetre','non')),
+  tags        text[] not null default '{}' check (cardinality(tags) <= 20),
+  texte       text not null default '' check (char_length(texte) <= 2000),
+  idees       text not null default '' check (char_length(idees) <= 1000),
+  savoir      text not null default '' check (char_length(savoir) <= 500),
+  contact     text not null default '' check (char_length(contact) <= 200)
+);
+
+alter table public.familles enable row level security;
+revoke all on public.familles from anon, authenticated;
+grant insert         on public.familles to anon, authenticated;
+grant select, delete on public.familles to authenticated;
+
+drop policy if exists "familles envoient"            on public.familles;
+drop policy if exists "animateurs lisent familles"   on public.familles;
+drop policy if exists "animateurs effacent familles" on public.familles;
+create policy "familles envoient"            on public.familles for insert to anon, authenticated with check (true);
+create policy "animateurs lisent familles"   on public.familles for select to authenticated using (true);
+create policy "animateurs effacent familles" on public.familles for delete to authenticated using (true);
+
+create index if not exists familles_created_at_idx on public.familles (created_at desc);
