@@ -1,6 +1,6 @@
 /* Données de l'espace familles, partagées par familles.html et l'espace animateur. */
 window.FAM = {
-  TEMPS: [["matin","🌅","Périscolaire du matin"],["soir","🌇","Périscolaire du soir"],["midi","🍽️","Pause du midi"],["mer","🎒","Mercredi"]],
+  TEMPS: [["matin","🌅","Périscolaire du matin"],["soir","🌇","Périscolaire du soir"],["midi","🍽️","Pause du midi"],["mer","🎒","Mercredi"],["autre","➕","Autre"]],
   NIVEAUX: ["PS","MS","GS","CP","CE1","CE2","CM1","CM2"],
   ITEMS: [
     ["accueil","L'accueil et l'écoute de l'équipe"],

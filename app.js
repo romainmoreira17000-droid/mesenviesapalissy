@@ -444,6 +444,7 @@ function renderFamilles(){
   const stack=vals=>{const v=vals.filter(x=>x>0),n=v.length; if(!n) return `<div class="stack"></div>`;
     return `<div class="stack">${[4,3,2,1].map(k=>{const c=v.filter(x=>x===k).length;return c?`<div style="width:${c/n*100}%;background:${NOTE_COL[k]}" title="${NOTES.find(x=>x[0]===k)[2]} : ${c}"></div>`:""}).join("")}</div>`;};
   const rows=[["global","Satisfaction générale",sat.map(r=>r.global||0)],...ITEMS.map(([id,l])=>[id,l,sat.map(r=>(r.notes||{})[id]||0)])];
+  if(sat.some(r=>(r.precisions||{}).critere)) rows.push(["autre","➕ Autres points (voir commentaires)",sat.map(r=>(r.notes||{}).autre||0)]);
   const satHtml=sat.length?`<div class="fam-legend">${NOTES.map(([v,e,l])=>`<span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:${NOTE_COL[v]};vertical-align:-1px"></span> ${l}</span>`).join("")}<span>% = part de satisfaits (sans compter « sans avis »)</span></div>
     <div class="rank">${rows.map(([id,l,v])=>{const p=pctSat(v);return `<div class="srow"><span style="${id==="global"?"font-weight:700":""}">${esc(l)}</span>${stack(v)}<span class="v">${p===null?"–":p+" %"}</span></div>`}).join("")}</div>`
     :`<div class="empty">Pas encore de questionnaire de satisfaction.</div>`;
@@ -451,13 +452,16 @@ function renderFamilles(){
   const nAm=all.filter(r=>r.type==="amelioration").length;
   const tagHtml=rankHtml(Object.entries(tc).sort((a,b)=>b[1]-a[1]),nAm||1,id=>{const t=TAGS.find(x=>x[0]===id)||["","•",id];return {e:t[1],l:t[2]};},"var(--peri)")||`<div class="empty">Pas encore de proposition d'amélioration.</div>`;
   const tps={}; sat.concat(all.filter(r=>r.type==="amelioration")).forEach(r=>(r.temps||[]).forEach(t=>tps[t]=(tps[t]||0)+1));
-  const withText=list.filter(r=>r.texte||r.idees||r.savoir||r.contact);
+  const withText=list.filter(r=>r.texte||r.idees||r.savoir||r.contact||Object.keys(r.precisions||{}).length);
   const card=r=>{const T=TYPES[r.type]||TYPES.libre;
-    const tl=(r.temps||[]).map(t=>(TEMPS.find(x=>x[0]===t)||[0,"",t])[2]).join(", ");
+    const P=r.precisions||{};
+    const tl=(r.temps||[]).map(t=>t==="autre"&&P.temps?"Autre : "+P.temps:(TEMPS.find(x=>x[0]===t)||[0,"",t])[2]).join(", ");
     return `<article class="pcard">
       <div class="meta"><span class="pill" style="background:${T.col}">${T.pic} ${esc(T.lbl)}</span>${fdate(r.at)}${r.global?` · ${NOTES.find(x=>x[0]===r.global)[1]}`:""}</div>
       ${tl||(r.niveaux||[]).length?`<div class="meta">${esc(tl)}${(r.niveaux||[]).length?` · ${esc(r.niveaux.join(", "))}`:""}</div>`:""}
       ${(r.tags||[]).length?`<div class="tg">${r.tags.map(t=>{const x=TAGS.find(y=>y[0]===t)||["","•",t];return `<span>${x[1]} ${esc(x[2])}</span>`}).join("")}</div>`:""}
+      ${P.critere?`<div class="txt"><b>➕ Autre point noté :</b> ${esc(P.critere)} ${(r.notes||{}).autre?(NOTES.find(x=>x[0]===r.notes.autre)||[])[1]||"":""}</div>`:""}
+      ${P.theme?`<div class="txt"><b>➕ Autre thème :</b> ${esc(P.theme)}</div>`:""}
       ${r.texte?`<div class="txt">${esc(r.texte)}</div>`:""}
       ${r.idees?`<div class="txt"><b>💡 Idées :</b> ${esc(r.idees)}</div>`:""}
       ${r.savoir?`<div class="txt"><b>🎁 Savoir-faire à partager :</b> ${esc(r.savoir)}</div>`:""}

@@ -179,3 +179,9 @@ grant execute on function public.comptes_en_attente(), public.valider_animateur(
 -- 7. Activité « Autre chose » : l'enfant précise laquelle
 -- =====================================================================
 alter table public.envies add column if not exists autre text not null default '' check (char_length(autre) <= 200);
+
+-- =====================================================================
+-- 8. Familles : précisions des choix « Autre » (temps, critère de satisfaction, thème)
+-- =====================================================================
+alter table public.familles add column if not exists precisions jsonb not null default '{}'::jsonb
+  check (jsonb_typeof(precisions) = 'object' and octet_length(precisions::text) <= 600);
