@@ -635,14 +635,16 @@ function renderSettings(){
   <div class="panel"><h3>🔔 Alertes « un enfant veut parler »</h3>
     <p class="muted" style="margin:0">Tant que l'espace animateur est ouvert sur cet appareil, il vérifie toutes les 15 secondes : son, vibration et notification dès qu'un enfant demande un animateur.</p>
     <div class="tabs"><button class="btn primary" id="notifOn">Activer les notifications</button><button class="btn" id="notifTest">Tester l'alerte</button></div>
-    <div class="ntfy">${acc.ntfy?.ntfy_topic?`<b>📱 Sur votre téléphone, même quand l'appli est fermée :</b>
-      <ol style="margin:4px 0 0;padding-left:1.2rem">
-        <li>Installez l'appli gratuite <b>ntfy</b> (Play Store ou App Store).</li>
-        <li>Touchez <b>+</b> (s'abonner), puis collez ce nom de canal : <code style="overflow-wrap:anywhere">${esc(acc.ntfy.ntfy_topic)}</code> <button class="btn small" id="copyTopic" data-url="${esc(acc.ntfy.ntfy_topic)}">Copier</button></li>
-        <li>Touchez <b>Tester l'alerte téléphone</b> ci-dessous pour vérifier.</li></ol>
-      <small class="muted">Gardez ce nom de canal pour l'équipe : toute personne qui le connaît reçoit les alertes. Le message ne contient ni prénom ni émotion, seulement la classe.</small>
-      <div><button class="btn" id="ntfyTest" data-topic="${esc(acc.ntfy.ntfy_topic)}">Tester l'alerte téléphone</button></div>`
-      :`<small class="muted">📱 Alertes sur téléphone (appli fermée) : pas encore activées dans la base de données (fichier <code>supabase-alertes.sql</code>, voir le README).</small>`}</div>
+    <div class="ntfy">${acc.ntfy?.ntfy_topic?(()=>{const url="https://ntfy.sh/"+acc.ntfy.ntfy_topic;let qr="";
+      try{const q=qrcode(0,"M");q.addData(url);q.make();qr=q.createSvgTag({cellSize:5,margin:2,scalable:true});}catch(e){}
+      return `<b style="font-size:1.1rem">📱 Recevoir l'alerte sur son téléphone, même appli fermée (facultatif)</b>
+      <div class="ntfy-steps"><div class="qrbox">${qr}</div><ol>
+        <li><b>Installez l'appli gratuite « ntfy »</b> sur votre téléphone (Play Store ou App Store).</li>
+        <li><b>Scannez ce QR code</b> avec l'appareil photo du téléphone, puis touchez <b>« S'abonner »</b> (Subscribe).</li></ol></div>
+      <div class="tabs"><button class="btn primary" id="ntfyTest" data-topic="${esc(acc.ntfy.ntfy_topic)}">Envoyer une alerte de test</button>
+        <button class="btn small" id="copyTopic" data-url="${esc(acc.ntfy.ntfy_topic)}">Pas de QR ? Copier le nom du canal</button></div>
+      <small class="muted">Ce QR code est réservé à l'équipe. L'alerte dit seulement « Un enfant de CP demande un animateur » : ni prénom, ni émotion.</small>`;})()
+      :`<small class="muted">📱 Alertes sur téléphone : pas encore activées.</small>`}</div>
     <small class="muted">${"Notification" in window?{granted:"✅ Notifications autorisées sur cet appareil.",denied:"⛔ Notifications bloquées : autorisez-les dans les réglages du navigateur pour ce site.",default:"Notifications pas encore autorisées sur cet appareil."}[Notification.permission]:"Ce navigateur ne gère pas les notifications : le son et le bandeau rouge restent actifs."} Sur iPhone/iPad, ajoutez d'abord l'appli à l'écran d'accueil.</small></div>
   <div class="panel"><h3>👥 Comptes animateurs</h3>
     <p class="muted" style="margin:0">Un collègue crée son compte avec « Pas encore de compte ? » sur l'écran de connexion, puis tu le valides ici. Seuls les comptes validés voient les réponses.</p>
