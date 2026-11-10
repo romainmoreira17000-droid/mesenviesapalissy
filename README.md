@@ -58,6 +58,10 @@ Ces règles sont dans la base (voir `supabase-setup.sql`). La clé du fichier `c
 
 Si le wifi coupe, les réponses restent sur la tablette (⏳ en haut de l'écran) et partent toutes seules au retour de la connexion.
 
+## Voix
+
+Les phrases lues aux enfants sont enregistrées dans `audio/` (114 fichiers, voix de synthèse française « siwis » de Piper, données SIWIS de l'Université d'Édimbourg, licence CC-BY 4.0). Elles fonctionnent même sur une tablette sans synthèse vocale. Les activités ajoutées par l'équipe utilisent la voix de l'appareil, si elle existe.
+
 ## Fichiers
 
 - `index.html`, `style.css`, `app.js` : l'application

@@ -79,8 +79,20 @@ let frVoice=null, voiceCount=0;
 function pickVoice(){ try{ const v=speechSynthesis.getVoices(); voiceCount=v.length;
   frVoice=v.find(x=>/^fr[-_]FR/i.test(x.lang)&&x.localService)||v.find(x=>/^fr[-_]FR/i.test(x.lang))||v.find(x=>/^fr/i.test(x.lang))||null; }catch(e){} }
 if(hasTTS){ pickVoice(); try{ speechSynthesis.addEventListener("voiceschanged",pickVoice); }catch(e){} setTimeout(pickVoice,800); setTimeout(pickVoice,3000); }
+/* Phrases enregistrées à l'avance (dossier audio/) : elles marchent même sur une tablette sans voix installée. */
+let voixMap={}, curAudio=null;
+try{ fetch("audio/voix.json?v=20261110i").then(r=>r.ok?r.json():{}).then(j=>{voixMap=j||{};}).catch(()=>{}); }catch(e){}
 function say(t,force){
-  if((!voice&&!force)||!hasTTS||!t) return;
+  if((!voice&&!force)||!t) return;
+  const k=voixMap[t];
+  if(k){
+    try{ if(curAudio) curAudio.pause(); if(hasTTS) speechSynthesis.cancel();
+      curAudio=new Audio("audio/"+k+".mp3"); const p=curAudio.play(); if(p&&p.catch) p.catch(()=>sayTTS(t)); return; }catch(e){}
+  }
+  sayTTS(t);
+}
+function sayTTS(t){
+  if(!hasTTS||!t) return;
   try{
     const u=new SpeechSynthesisUtterance(t); u.lang="fr-FR"; u.rate=.95; if(frVoice) u.voice=frVoice;
     const speak=()=>{ try{ speechSynthesis.resume(); speechSynthesis.speak(u); }catch(e){} };
@@ -89,6 +101,8 @@ function say(t,force){
   }catch(e){}
 }
 function voiceDiag(){
+  const n=Object.keys(voixMap).length;
+  if(n) return "✅ "+n+" phrases enregistrées dans l'appli : la voix marche même sans voix installée sur l'appareil. Si vous n'entendez rien, montez le volume « Multimédia » et vérifiez que le bouton 🔊 Voix est activé."+(hasTTS&&frVoice?"":" (Les activités ajoutées par l'équipe ne seront pas lues sur cet appareil.)");
   if(!hasTTS) return "⛔ Ce navigateur ne sait pas lire à voix haute. Ouvrez l'appli avec Chrome.";
   pickVoice();
   if(!voiceCount) return "⛔ Aucune voix n'est installée sur cet appareil. Dans les Paramètres de la tablette, cherchez « Synthèse vocale » : il faut un moteur (par exemple « Services vocaux de Google ») avec la langue Français. Sur une tablette gérée, c'est à demander à l'administrateur.";
@@ -720,7 +734,8 @@ function renderSettings(){
       <small class="muted">Le QR code peut être imprimé sur une affiche : clic droit sur l'image › Enregistrer.</small></div></div></div>
   <div class="panel"><h3>🔊 Voix qui lit les questions</h3>
     <div class="tabs"><button class="btn primary" id="voiceTest">Tester la voix sur cet appareil</button></div>
-    <small class="muted" id="voiceDiag">${esc(voiceDiag())}</small></div>
+    <small class="muted" id="voiceDiag">${esc(voiceDiag())}</small>
+    <small class="muted">Voix enregistrée : voix de synthèse « siwis » (Piper), données SIWIS de l'Université d'Édimbourg, licence CC-BY 4.0.</small></div>
   <div class="panel"><h3>🔔 Alertes « un enfant veut parler »</h3>
     <p class="muted" style="margin:0">Tant que l'espace animateur est ouvert sur cet appareil, il vérifie toutes les 15 secondes : son, vibration et notification dès qu'un enfant demande un animateur.</p>
     <div class="tabs"><button class="btn primary" id="notifOn">Activer les notifications</button><button class="btn" id="notifTest">Tester l'alerte</button></div>
