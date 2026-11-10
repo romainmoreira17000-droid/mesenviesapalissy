@@ -73,7 +73,28 @@ try{ if(localStorage.getItem("envies-voice")==="off") voice=false; }catch(e){}
 const $=(sel,el=document)=>el.querySelector(sel);
 const esc=t=>String(t??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 function toast(t){const el=$("#toast");el.textContent=t;el.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>el.hidden=true,3000);}
-function say(t,force){ if(!voice&&!force) return; try{ const u=new SpeechSynthesisUtterance(t); u.lang="fr-FR"; u.rate=.95; speechSynthesis.cancel(); speechSynthesis.speak(u);}catch(e){} }
+/* Voix : on choisit explicitement une voix française quand l'appareil en a une (les tablettes la chargent parfois en retard). */
+const hasTTS="speechSynthesis" in window&&"SpeechSynthesisUtterance" in window;
+let frVoice=null, voiceCount=0;
+function pickVoice(){ try{ const v=speechSynthesis.getVoices(); voiceCount=v.length;
+  frVoice=v.find(x=>/^fr[-_]FR/i.test(x.lang)&&x.localService)||v.find(x=>/^fr[-_]FR/i.test(x.lang))||v.find(x=>/^fr/i.test(x.lang))||null; }catch(e){} }
+if(hasTTS){ pickVoice(); try{ speechSynthesis.addEventListener("voiceschanged",pickVoice); }catch(e){} setTimeout(pickVoice,800); setTimeout(pickVoice,3000); }
+function say(t,force){
+  if((!voice&&!force)||!hasTTS||!t) return;
+  try{
+    const u=new SpeechSynthesisUtterance(t); u.lang="fr-FR"; u.rate=.95; if(frVoice) u.voice=frVoice;
+    const speak=()=>{ try{ speechSynthesis.resume(); speechSynthesis.speak(u); }catch(e){} };
+    /* sur Android, annuler puis parler dans la foulée fait parfois perdre la phrase : on laisse un court délai */
+    if(speechSynthesis.speaking||speechSynthesis.pending){ speechSynthesis.cancel(); setTimeout(speak,90); } else speak();
+  }catch(e){}
+}
+function voiceDiag(){
+  if(!hasTTS) return "⛔ Ce navigateur ne sait pas lire à voix haute. Ouvrez l'appli avec Chrome.";
+  pickVoice();
+  if(!voiceCount) return "⛔ Aucune voix n'est installée sur cet appareil. Dans les Paramètres de la tablette, cherchez « Synthèse vocale » : il faut un moteur (par exemple « Services vocaux de Google ») avec la langue Français. Sur une tablette gérée, c'est à demander à l'administrateur.";
+  if(!frVoice) return "⚠️ "+voiceCount+" voix installées, mais aucune en français. Dans les Paramètres de la tablette, cherchez « Synthèse vocale » et ajoutez la langue Français.";
+  return "✅ Voix française trouvée : "+frVoice.name+". Si vous n'entendez rien, montez le volume « Multimédia » de la tablette.";
+}
 function activities(m){
   const base=BASE[m].map(([id,e,l])=>({id:m+":"+id,e,l,custom:false}));
   const add=(config.added?.[m]||[]).map(a=>({id:a.id,e:a.e,l:a.l,custom:true}));
@@ -697,6 +718,9 @@ function renderSettings(){
     <div class="famlink"><img class="qr" src="qr-familles.svg" alt="QR code de l'espace familles"><div style="display:flex;flex-direction:column;gap:8px;min-width:0">
       <code style="overflow-wrap:anywhere">${esc(famUrl)}</code><div class="tabs"><button class="btn" id="copyFam" data-url="${esc(famUrl)}">Copier le lien</button><a class="btn" href="familles.html" target="_blank" rel="noopener">Ouvrir</a><a class="btn primary" href="affiche-familles.pdf" target="_blank" rel="noopener">🖨️ Affiche A4 à imprimer</a></div>
       <small class="muted">Le QR code peut être imprimé sur une affiche : clic droit sur l'image › Enregistrer.</small></div></div></div>
+  <div class="panel"><h3>🔊 Voix qui lit les questions</h3>
+    <div class="tabs"><button class="btn primary" id="voiceTest">Tester la voix sur cet appareil</button></div>
+    <small class="muted" id="voiceDiag">${esc(voiceDiag())}</small></div>
   <div class="panel"><h3>🔔 Alertes « un enfant veut parler »</h3>
     <p class="muted" style="margin:0">Tant que l'espace animateur est ouvert sur cet appareil, il vérifie toutes les 15 secondes : son, vibration et notification dès qu'un enfant demande un animateur.</p>
     <div class="tabs"><button class="btn primary" id="notifOn">Activer les notifications</button><button class="btn" id="notifTest">Tester l'alerte</button></div>
@@ -778,6 +802,7 @@ document.addEventListener("click",e=>{
   if(t.id==="copyTopic"){ navigator.clipboard?.writeText(d.url).then(()=>toast("Nom du canal copié."),()=>toast("Copie impossible : sélectionnez le nom à la main.")); return; }
   if(t.id==="ntfyTest"){ fetch("https://ntfy.sh/"+encodeURIComponent(d.topic),{method:"POST",body:"Test : les alertes « un enfant veut parler » arrivent bien sur ce téléphone.",headers:{Title:"Mes envies : test d'alerte",Tags:"white_check_mark"}})
       .then(r=>toast(r.ok?"Alerte de test envoyée : regardez votre téléphone.":"Envoi impossible."),()=>toast("Envoi impossible : vérifiez la connexion.")); return; }
+  if(t.id==="voiceTest"){ say("Bonjour ! La voix fonctionne sur cet appareil.",true); setTimeout(()=>{const el=$("#voiceDiag"); if(el) el.textContent=voiceDiag();},1200); return; }
   if(t.id==="notifOn"){ unlockAlerts(); try{ Notification.requestPermission().then(()=>render()); }catch(e){ toast("Ce navigateur ne gère pas les notifications."); } return; }
   if(t.id==="notifTest"){ unlockAlerts(); setTimeout(()=>alertAnim([{id:"test"+Date.now(),classe:"GS",emotion:"tristesse",prenom:"Test"}]),300); return; }
   if(t.id==="savePass"){ const v=$("#newpass").value; if(v.length<8){toast("8 caractères minimum.");return;}
