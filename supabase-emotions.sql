@@ -9,7 +9,7 @@ create table if not exists public.emotions (
   created_at  timestamptz not null default now(),
   classe      text not null check (classe in ('PS','MS','GS','CP','CE1','CE2','CM1','CM2')),
   cycle       text not null check (cycle in ('mat','elem')),
-  emotion     text not null check (emotion in ('joie','tristesse','colere','peur','surprise','degout','calme','fierte','fatigue')),
+  emotion     text not null check (emotion in ('tristesse','peur','colere','honte','joie','surprise','degout','calme','fierte','fatigue')),
   intensite   smallint check (intensite in (1,2)),
   causes      text[] not null default '{}' check (cardinality(causes) <= 10),
   cause_autre text not null default '' check (char_length(cause_autre) <= 120),

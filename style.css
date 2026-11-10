@@ -313,3 +313,6 @@ a.btn{color:inherit;text-decoration:none;display:inline-flex;align-items:center}
 .emocard .kidpic svg{width:100%;height:100%;display:block}
 .emocard{min-height:230px}
 @media (min-width:600px){.emos{grid-template-columns:repeat(3,minmax(0,1fr))}.emocard .kidpic{width:132px;height:132px}}
+.emocard .kidpic{background:none;box-shadow:0 0 0 5px var(--ring,#fff);border-radius:50%}
+.emocard .kidpic img{width:100%;height:100%;display:block;border-radius:50%}
+.emocard .name{font-size:1.35rem;text-align:center;line-height:1.05}

@@ -34,12 +34,12 @@ const PTYPES={
   ameliorer:{lbl:"J'améliore le centre",pic:"🔧",cls:"ame",col:"var(--peri)",q:"Qu'est-ce que tu changerais au centre ?",tags:AMELIO,ph:"Par exemple : avoir plus de ballons dans la cour",sub:"Ce que je changerais"},
   explorer:{lbl:"J'aimerais découvrir",pic:"🧭",cls:"exp",col:"var(--mer)",q:"Qu'est-ce que tu aimerais découvrir ?",tags:EXPLO,ph:"Par exemple : apprendre des tours de magie",sub:"Des choses nouvelles à essayer"},
   libre:{lbl:"Je m'exprime",pic:"💬",cls:"lib",col:"var(--midi)",q:"Dis ou dessine ce que tu veux !",tags:null,ph:"Écris ici ce que tu as envie de dire",sub:"Dire ou dessiner ce que je veux"}};
-const EMOS=[["joie","😊","La joie","#FFE58A","Je suis content, je ris, je m'amuse."],
-  ["tristesse","😢","La tristesse","#C9E2FF","J'ai du chagrin, je suis déçu ou je me sens seul."],
-  ["colere","😠","La colère","#FFC4C4","Je suis fâché, pas d'accord, ou c'est injuste."],
-  ["peur","😨","La peur","#DCCCF2","J'ai peur de quelque chose, je ne me sens pas rassuré."],
-  ["surprise","😲","La surprise","#FFD9B0","Je suis étonné par quelque chose d'inattendu."]];
-const EMO_POS=["joie","surprise"];
+const EMOS=[["tristesse","😢","Tristesse","#BFE3FA","J'ai du chagrin, je suis déçu ou je me sens seul.","#2F9BD8"],
+  ["peur","😨","Peur","#DCCBEF","J'ai peur de quelque chose, je ne me sens pas rassuré.","#8E5BB5"],
+  ["colere","😠","Colère","#FBC9C4","Je suis fâché, pas d'accord, ou c'est injuste.","#D93A32"],
+  ["honte","😳","Honte","#FBE49C","Je suis gêné, j'ai envie de me cacher.","#E8B21E"],
+  ["joie","😄","Soulagement et joie","#D5EEBF","Je me sens bien, je suis content, ça va mieux.","#5BAE3A"]];
+const EMO_POS=["joie"];
 const emoById=id=>EMOS.find(e=>e[0]===id)||[id,"❔",id,"#eee"];
 const CAUSES=[["copains","🤝","Les copains"],["jeu","🎲","Un jeu"],["activite","🎨","Une activité"],["cantine","🍽️","La cantine"],["ecole","🏫","L'école"],
   ["maison","🏠","La maison"],["adulte","🧑","Un adulte"],["sais","🤷","Je ne sais pas"],["autre","➕","Autre chose"]];
@@ -149,34 +149,6 @@ function nav(){
     <div class="dots" aria-label="Étape ${n} sur 4">${dots}</div>${s.classe&&s.view!=="classe"?`<span class="classchip">${esc(s.classe)}</span>`:"<span></span>"}</div>`;
 }
 
-/* ---------------- Les enfants des cartes émotions (dessins vectoriels originaux) ---------------- */
-function kid(emo){
-  const girl=["joie","colere","degout"].includes(emo), D="#3B2314";
-  const skin=girl?"#FFD9B8":"#C98A5A", hair=girl?"#B5562B":"#3B2314", shirt=girl?"#3DB7A4":"#5A8DEE";
-  const eye=x=>`<ellipse cx="${x}" cy="66" rx="4.6" ry="5.6" fill="${D}"/><circle cx="${x+1.6}" cy="63.6" r="1.7" fill="#fff"/>`;
-  const wide=x=>`<circle cx="${x}" cy="65" r="8.5" fill="#fff" stroke="${D}" stroke-width="2"/><circle cx="${x}" cy="66" r="3.6" fill="${D}"/>`;
-  const st=(d,w=3.2)=>`<path d="${d}" stroke="${D}" stroke-width="${w}" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
-  const cheeks=(c,o=.6)=>`<circle cx="36" cy="78" r="6.5" fill="${c}" opacity="${o}"/><circle cx="84" cy="78" r="6.5" fill="${c}" opacity="${o}"/>`;
-  const F={
-    joie:()=>st("M40 55q7-5 14 0M66 55q7-5 14 0",2.6)+st("M41 68q6-9 12 0M67 68q6-9 12 0",3.4)+
-      `<path d="M43 77Q60 101 77 77Z" fill="#A83232" stroke="${D}" stroke-width="2.4" stroke-linejoin="round"/><path d="M51 88q9-6 18 0q-9 8-18 0Z" fill="#FF8C8C"/>`+cheeks("#FF9AA2"),
-    tristesse:()=>st("M39 58l14-6M81 58l-14-6")+eye(47)+eye(73)+st("M48 90Q60 80 72 90")+
-      `<path d="M44 74q-5 9 0 13q5-4 0-13ZM76 74q-5 9 0 13q5-4 0-13Z" fill="#5AB0FF"/>`,
-    colere:()=>st("M38 50l16 8M82 50l-16 8",4)+eye(47)+eye(73)+
-      `<rect x="45" y="80" width="30" height="12" rx="5" fill="#fff" stroke="${D}" stroke-width="2.4"/>`+st("M45 86h30M55 80v12M65 80v12",1.8)+cheeks("#FF5C5C",.55)+
-      `<g fill="#fff" stroke="#B8C2CC" stroke-width="1.5"><circle cx="12" cy="30" r="6"/><circle cx="19" cy="24" r="5"/><circle cx="108" cy="30" r="6"/><circle cx="101" cy="24" r="5"/></g>`,
-    peur:()=>st("M38 52q8-7 15-3M82 52q-8-7-15-3")+wide(46)+wide(74)+st("M45 88q3.75-7 7.5 0t7.5 0t7.5 0t7.5 0")+
-      `<path d="M92 40q-6 10 0 14q6-4 0-14Z" fill="#5AB0FF"/>`,
-    surprise:()=>st("M39 49q7-7 14 0M67 49q7-7 14 0")+wide(46)+wide(74)+`<ellipse cx="60" cy="88" rx="7" ry="9" fill="#7A2B2B" stroke="${D}" stroke-width="2"/>`,
-    degout:()=>st("M39 52l15 6M67 54q7-6 14-1")+st("M41 67h12",3.6)+eye(73)+st("M45 86q5-6 10 0t10 0t10 0")+
-      `<path d="M55 88q5 14 11 0Z" fill="#FF8C8C" stroke="${D}" stroke-width="2" stroke-linejoin="round"/>`+cheeks("#9BD05A",.75)};
-  const back=girl?`<path d="M20 72Q16 22 60 20Q104 22 100 72Q102 96 88 100L32 100Q18 96 20 72Z" fill="${hair}"/>`:"";
-  const front=girl?`<path d="M25 60Q26 25 60 25Q94 25 95 60Q80 43 60 46Q40 43 25 60Z" fill="${hair}"/><path d="M27 44Q60 30 93 44" stroke="#FFD23F" stroke-width="4" fill="none" stroke-linecap="round"/>`
-    :`<path d="M24 58Q20 20 60 21Q100 20 96 58Q90 40 72 41Q64 48 50 41Q34 38 24 58Z" fill="${hair}"/>`;
-  return `<svg viewBox="0 0 120 120" aria-hidden="true">${back}<path d="M26 120Q28 98 60 98Q92 98 94 120Z" fill="${shirt}"/>
-    <circle cx="24" cy="68" r="6.5" fill="${skin}"/><circle cx="96" cy="68" r="6.5" fill="${skin}"/><circle cx="60" cy="64" r="36" fill="${skin}"/>
-    ${front}${(F[emo]||F.joie)()}</svg>`;
-}
 /* ---------------- Rendu enfant ---------------- */
 function render(){
   const app=$("#app");
@@ -231,7 +203,7 @@ function render(){
   if(s.view==="choix"&&$("#autreTxt")) $("#autreTxt").addEventListener("input",e=>s.autre=e.target.value);
   if(s.view==="emo"){
     app.innerHTML=`<div class="wrap kid">${nav()}${q("Comment tu te sens ?","Touche l'émotion qui te ressemble.")}
-      <div class="grid emos">${EMOS.map(([id,e,l,c,d])=>`<button class="big emocard" data-emo="${id}" aria-pressed="${s.emo===id}" style="--emo:${c}"><span class="badge" aria-hidden="true">✓</span><span class="kidpic">${kid(id)}</span><span class="name">${l} <span aria-hidden="true">${e}</span></span><span class="sub">${d}</span></button>`).join("")}</div>
+      <div class="grid emos">${EMOS.map(([id,e,l,c,d,ring])=>`<button class="big emocard" data-emo="${id}" aria-pressed="${s.emo===id}" style="--emo:${c};--ring:${ring}"><span class="badge" aria-hidden="true">✓</span><span class="kidpic"><img src="img/emo-${id}.webp" alt="" width="300" height="300"></span><span class="name">${l}</span><span class="sub">${d}</span></button>`).join("")}</div>
       ${s.emo?`<div class="idea"><span class="lab">Un peu ou beaucoup ?</span><div class="grid inten">
         <button class="big tag" data-int="1" aria-pressed="${s.intensite===1}"><span class="badge" aria-hidden="true">✓</span><span class="pic" aria-hidden="true" style="font-size:2rem">${emoById(s.emo)[1]}</span><span class="name">Un peu</span></button>
         <button class="big tag" data-int="2" aria-pressed="${s.intensite===2}"><span class="badge" aria-hidden="true">✓</span><span class="pic" aria-hidden="true" style="font-size:3.6rem">${emoById(s.emo)[1]}</span><span class="name">Beaucoup</span></button></div></div>`:""}
@@ -652,11 +624,11 @@ function renderEmotions(){
       <p class="muted" style="margin:0;font-size:.9rem">« C'est fait » retire l'enfant de cette liste et efface son prénom.</p>${todoHtml}</div>
     <div class="panel">${filters}
       <div class="kpis"><div class="kpi"><b>${n}</b><span>réponses</span></div>
-        <div class="kpi"><b>${n?Math.round(pos/n*100)+" %":"–"}</b><span>de joie ou de surprise</span></div>
+        <div class="kpi"><b>${n?Math.round(pos/n*100)+" %":"–"}</b><span>de soulagement et de joie</span></div>
         <div class="kpi"><b>${todo.length}</b><span>enfants à voir</span></div></div></div>
     <div class="cols">
       <div class="panel"><h3>Comment se sentent les enfants</h3>${bars}</div>
-      <div class="panel"><h3>Ce qui provoque les émotions difficiles</h3><p class="muted" style="margin:0;font-size:.9rem">Tristesse, colère, peur.</p>${causeRank}</div></div>
+      <div class="panel"><h3>Ce qui provoque les émotions difficiles</h3><p class="muted" style="margin:0;font-size:.9rem">Tristesse, peur, colère, honte.</p>${causeRank}</div></div>
     <div class="panel"><h3>Par classe</h3>${table}</div>
     <div class="panel"><h3>Ce qu'ils ont voulu dire</h3>${wordsHtml}</div>
     <div class="panel"><h3>Nouvelle période</h3><p class="muted" style="margin:0">Efface les réponses affichées avec les filtres ci-dessus.</p>${confirm}</div>`;
