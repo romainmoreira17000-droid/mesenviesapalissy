@@ -34,9 +34,13 @@ const PTYPES={
   ameliorer:{lbl:"J'améliore le centre",pic:"🔧",cls:"ame",col:"var(--peri)",q:"Qu'est-ce que tu changerais au centre ?",tags:AMELIO,ph:"Par exemple : avoir plus de ballons dans la cour",sub:"Ce que je changerais"},
   explorer:{lbl:"J'aimerais découvrir",pic:"🧭",cls:"exp",col:"var(--mer)",q:"Qu'est-ce que tu aimerais découvrir ?",tags:EXPLO,ph:"Par exemple : apprendre des tours de magie",sub:"Des choses nouvelles à essayer"},
   libre:{lbl:"Je m'exprime",pic:"💬",cls:"lib",col:"var(--midi)",q:"Dis ou dessine ce que tu veux !",tags:null,ph:"Écris ici ce que tu as envie de dire",sub:"Dire ou dessiner ce que je veux"}};
-const EMOS=[["joie","😄","La joie","#FFE58A"],["calme","😌","Le calme","#BFF0E0"],["fierte","🤩","La fierté","#FFD0A0"],["surprise","😮","La surprise","#E3D4FF"],
-  ["fatigue","😴","La fatigue","#D8E3EE"],["tristesse","😢","La tristesse","#C9E2FF"],["colere","😠","La colère","#FFC4C4"],["peur","😨","La peur","#DCCCF2"]];
-const EMO_POS=["joie","calme","fierte","surprise"];
+const EMOS=[["joie","😊","La joie","#FFE58A","Je suis content, je ris, je m'amuse."],
+  ["tristesse","😢","La tristesse","#C9E2FF","J'ai du chagrin, je suis déçu ou je me sens seul."],
+  ["colere","😠","La colère","#FFC4C4","Je suis fâché, pas d'accord, ou c'est injuste."],
+  ["peur","😨","La peur","#DCCCF2","J'ai peur de quelque chose, je ne me sens pas rassuré."],
+  ["surprise","😲","La surprise","#FFD9B0","Je suis étonné par quelque chose d'inattendu."],
+  ["degout","🤢","Le dégoût","#CDEBB5","Quelque chose me déplaît : une odeur, un goût…"]];
+const EMO_POS=["joie","surprise"];
 const emoById=id=>EMOS.find(e=>e[0]===id)||[id,"❔",id,"#eee"];
 const CAUSES=[["copains","🤝","Les copains"],["jeu","🎲","Un jeu"],["activite","🎨","Une activité"],["cantine","🍽️","La cantine"],["ecole","🏫","L'école"],
   ["maison","🏠","La maison"],["adulte","🧑","Un adulte"],["sais","🤷","Je ne sais pas"],["autre","➕","Autre chose"]];
@@ -200,7 +204,7 @@ function render(){
   if(s.view==="choix"&&$("#autreTxt")) $("#autreTxt").addEventListener("input",e=>s.autre=e.target.value);
   if(s.view==="emo"){
     app.innerHTML=`<div class="wrap kid">${nav()}${q("Comment tu te sens ?","Touche l'émotion qui te ressemble.")}
-      <div class="grid emos">${EMOS.map(([id,e,l,c])=>`<button class="big emocard" data-emo="${id}" aria-pressed="${s.emo===id}" style="--emo:${c}"><span class="badge" aria-hidden="true">✓</span><span class="pic" aria-hidden="true">${e}</span><span class="name">${l}</span></button>`).join("")}</div>
+      <div class="grid emos">${EMOS.map(([id,e,l,c,d])=>`<button class="big emocard" data-emo="${id}" aria-pressed="${s.emo===id}" style="--emo:${c}"><span class="badge" aria-hidden="true">✓</span><span class="pic" aria-hidden="true">${e}</span><span class="name">${l}</span><span class="sub">${d}</span></button>`).join("")}</div>
       ${s.emo?`<div class="idea"><span class="lab">Un peu ou beaucoup ?</span><div class="grid inten">
         <button class="big tag" data-int="1" aria-pressed="${s.intensite===1}"><span class="badge" aria-hidden="true">✓</span><span class="pic" aria-hidden="true" style="font-size:2rem">${emoById(s.emo)[1]}</span><span class="name">Un peu</span></button>
         <button class="big tag" data-int="2" aria-pressed="${s.intensite===2}"><span class="badge" aria-hidden="true">✓</span><span class="pic" aria-hidden="true" style="font-size:3.6rem">${emoById(s.emo)[1]}</span><span class="name">Beaucoup</span></button></div></div>`:""}
@@ -621,11 +625,11 @@ function renderEmotions(){
       <p class="muted" style="margin:0;font-size:.9rem">« C'est fait » retire l'enfant de cette liste et efface son prénom.</p>${todoHtml}</div>
     <div class="panel">${filters}
       <div class="kpis"><div class="kpi"><b>${n}</b><span>réponses</span></div>
-        <div class="kpi"><b>${n?Math.round(pos/n*100)+" %":"–"}</b><span>d'émotions agréables (joie, calme, fierté, surprise)</span></div>
+        <div class="kpi"><b>${n?Math.round(pos/n*100)+" %":"–"}</b><span>de joie ou de surprise</span></div>
         <div class="kpi"><b>${todo.length}</b><span>enfants à voir</span></div></div></div>
     <div class="cols">
       <div class="panel"><h3>Comment se sentent les enfants</h3>${bars}</div>
-      <div class="panel"><h3>Ce qui provoque les émotions difficiles</h3><p class="muted" style="margin:0;font-size:.9rem">Tristesse, colère, peur, fatigue.</p>${causeRank}</div></div>
+      <div class="panel"><h3>Ce qui provoque les émotions difficiles</h3><p class="muted" style="margin:0;font-size:.9rem">Tristesse, colère, peur, dégoût.</p>${causeRank}</div></div>
     <div class="panel"><h3>Par classe</h3>${table}</div>
     <div class="panel"><h3>Ce qu'ils ont voulu dire</h3>${wordsHtml}</div>
     <div class="panel"><h3>Nouvelle période</h3><p class="muted" style="margin:0">Efface les réponses affichées avec les filtres ci-dessus.</p>${confirm}</div>`;
@@ -791,7 +795,7 @@ document.addEventListener("click",e=>{
     return;}
   if(d.mood){s.humeur=s.humeur===d.mood?null:d.mood; if(s.humeur) say(MOODS.find(x=>x.id===d.mood).lbl); render(); return;}
   if(d.tag){const i=s.tags.indexOf(d.tag); if(i>=0) s.tags.splice(i,1); else {s.tags.push(d.tag); say(tagById(s.view,d.tag).l);} render(); return;}
-  if(d.emo){ s.emo=s.emo===d.emo?null:d.emo; s.intensite=null; if(s.emo) say(emoById(s.emo)[2]); render(); return; }
+  if(d.emo){ s.emo=s.emo===d.emo?null:d.emo; s.intensite=null; if(s.emo) say(emoById(s.emo)[2]+". "+(emoById(s.emo)[4]||"")); render(); return; }
   if(d.int){ const v=+d.int; s.intensite=s.intensite===v?null:v; if(s.intensite) say(v===1?"Un peu":"Beaucoup"); render(); return; }
   if(d.cause){ const i=s.causes.indexOf(d.cause); if(i>=0) s.causes.splice(i,1); else { s.causes.push(d.cause); say((CAUSES.find(c=>c[0]===d.cause)||[])[2]||""); } render(); return; }
   if(d.parler){ const v=d.parler==="oui"; s.parler=s.parler===v?null:v; if(s.parler!==null) say(v?"Oui. Écris ton prénom, ou demande à un grand.":"Non, ça va."); render(); if(s.parler===true) setTimeout(()=>$("#prenom")?.focus({preventScroll:false}),50); return; }
