@@ -38,8 +38,7 @@ const EMOS=[["joie","😊","La joie","#FFE58A","Je suis content, je ris, je m'am
   ["tristesse","😢","La tristesse","#C9E2FF","J'ai du chagrin, je suis déçu ou je me sens seul."],
   ["colere","😠","La colère","#FFC4C4","Je suis fâché, pas d'accord, ou c'est injuste."],
   ["peur","😨","La peur","#DCCCF2","J'ai peur de quelque chose, je ne me sens pas rassuré."],
-  ["surprise","😲","La surprise","#FFD9B0","Je suis étonné par quelque chose d'inattendu."],
-  ["degout","🤢","Le dégoût","#CDEBB5","Quelque chose me déplaît : une odeur, un goût…"]];
+  ["surprise","😲","La surprise","#FFD9B0","Je suis étonné par quelque chose d'inattendu."]];
 const EMO_POS=["joie","surprise"];
 const emoById=id=>EMOS.find(e=>e[0]===id)||[id,"❔",id,"#eee"];
 const CAUSES=[["copains","🤝","Les copains"],["jeu","🎲","Un jeu"],["activite","🎨","Une activité"],["cantine","🍽️","La cantine"],["ecole","🏫","L'école"],
@@ -657,7 +656,7 @@ function renderEmotions(){
         <div class="kpi"><b>${todo.length}</b><span>enfants à voir</span></div></div></div>
     <div class="cols">
       <div class="panel"><h3>Comment se sentent les enfants</h3>${bars}</div>
-      <div class="panel"><h3>Ce qui provoque les émotions difficiles</h3><p class="muted" style="margin:0;font-size:.9rem">Tristesse, colère, peur, dégoût.</p>${causeRank}</div></div>
+      <div class="panel"><h3>Ce qui provoque les émotions difficiles</h3><p class="muted" style="margin:0;font-size:.9rem">Tristesse, colère, peur.</p>${causeRank}</div></div>
     <div class="panel"><h3>Par classe</h3>${table}</div>
     <div class="panel"><h3>Ce qu'ils ont voulu dire</h3>${wordsHtml}</div>
     <div class="panel"><h3>Nouvelle période</h3><p class="muted" style="margin:0">Efface les réponses affichées avec les filtres ci-dessus.</p>${confirm}</div>`;

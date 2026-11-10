@@ -8,7 +8,7 @@ Après avoir choisi sa classe, l'enfant a 4 portes :
 - 🔧 **J'améliore le centre** : ce que l'enfant changerait (images, moment concerné, explication)
 - 🧭 **J'aimerais découvrir** : ce que l'enfant voudrait essayer
 - 💬 **Je m'exprime** : un dessin au doigt et/ou un texte libre
-- 😊 **Mes émotions** : comment je me sens (6 émotions : joie, tristesse, colère, peur, surprise, dégoût, un peu ou beaucoup), à cause de quoi, et « je veux en parler à un animateur » (prénom facultatif, effacé quand l'animateur clique « C'est fait »). Après une émotion difficile, exercice de respiration avec le renard.
+- 😊 **Mes émotions** : comment je me sens (5 émotions : joie, tristesse, colère, peur, surprise, un peu ou beaucoup), à cause de quoi, et « je veux en parler à un animateur » (prénom facultatif, effacé quand l'animateur clique « C'est fait »). Après une émotion difficile, exercice de respiration avec le renard.
 
 Le bouton 🔊 lit les questions à voix haute pour les maternelles. Les réponses sont **anonymes**.
 
