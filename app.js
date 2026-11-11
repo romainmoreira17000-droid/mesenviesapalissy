@@ -188,7 +188,9 @@ function render(){
       <div class="cyc elem"><div class="cycle-title">Élémentaire</div><div class="grid classes">${CLASSES.filter(c=>c.cyc==="elem").map(btn).join("")}</div></div></div>`;
   }
   else if(s.view==="hub"){
-    const door=(cls,go,pic,lbl,sub)=>`<button class="big door ${cls}" data-go="${go}"><span class="pic" aria-hidden="true">${pic}</span><span class="lbl">${lbl}</span><span class="sub">${sub}</span></button>`;
+    const PERSO={moment:"grimpe",ameliorer:"briques",explorer:"assis",libre:"coeur"};
+    let gi=1;
+    const door=(cls,go,pic,lbl,sub)=>`<button class="big door ${cls}" data-go="${go}"><span class="pic${PERSO[go]?" perso "+PERSO[go]:""}" aria-hidden="true">${PERSO[go]?`<img src="img/perso-${PERSO[go]}-${genre(gi++)}.webp" alt="">`:pic}</span><span class="lbl">${lbl}</span><span class="sub">${sub}</span></button>`;
     app.innerHTML=`<div class="wrap kid">${nav()}${q("Qu'est-ce que tu veux faire ?","",null,true)}
       <div class="grid hub">
         <button class="big door emo star" data-go="emo"><span class="pic">${emoImg("joie")}</span><span class="lbl">Mes émotions</span><span class="sub">Comment je me sens aujourd'hui</span></button>
