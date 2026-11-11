@@ -43,6 +43,15 @@ const EMO_POS=["joie"];
 const emoById=id=>EMOS.find(e=>e[0]===id)||[id,"❔",id,"#eee"];
 const CAUSES=[["copains","🤝","Les copains"],["jeu","🎲","Un jeu"],["activite","🎨","Une activité"],["cantine","🍽️","La cantine"],["ecole","🏫","L'école"],
   ["maison","🏠","La maison"],["adulte","🧑","Un adulte"],["sais","🤷","Je ne sais pas"],["autre","➕","Autre chose"]];
+/* Icônes illustrées des activités (img/act/) ; sinon l'émoticône. */
+const ACT_IMG={peri:{jeux:"jeux",dessin:"dessin",lecture:"biblio",ballon:"foot",calme:"calme",musique:"chant",dehors:"sport"},
+  mer:{piscine:"piscine",sortie:"sortie",cinema:"cinema",musee:"musee",cuisine:"cuisine",bricolage:"bricolage",grandjeu:"grandjeu",sport:"sport",
+    danse:"danse",theatre:"theatre",jardin:"jardin",sciences:"sciences",peinture:"peinture",chasse:"chasse",velo:"velo",spectacle:"spectacle"},
+  midi:{foot:"foot",corde:"corde",loup:"loup",cache:"cache",elastique:"elastique",biblio:"biblio",calme:"calme",dessin:"dessin",jeux:"jeux",basket:"basket",chant:"chant",relax:"relax"}};
+function actIcon(a){
+  const [m,k]=a.id.split(":"); const f=k==="autre"?"autre":(ACT_IMG[m]||{})[k];
+  return f?`<span class="pic icon" aria-hidden="true"><img src="img/act/${f}.webp" alt=""></span>`:`<span class="pic" aria-hidden="true">${esc(a.e)}</span>`;
+}
 const PENS=["#1F2B3A","#E53935","#FB8C00","#FDD835","#43A047","#1E88E5","#8E24AA","#8D6E63"];
 
 /* ---------------- Connexion Supabase ---------------- */
@@ -199,14 +208,14 @@ function render(){
       </div></div>`;
   }
   else if(s.view==="moment"){
-    app.innerHTML=`<div class="wrap kid">${nav()}${q("C'est pour quel moment ?","","📅")}
-      <div class="grid moments">${MOMENTS.map(m=>`<button class="big moment ${m.id}" data-moment="${m.id}"><span class="pic" aria-hidden="true">${m.pic}</span><span class="lbl">${m.lbl}</span><span class="sub">${m.sub}</span></button>`).join("")}</div></div>`;
+    app.innerHTML=`<div class="wrap kid">${nav()}${q("C'est pour quel moment ?","",`<img class="qimg" src="img/act/moment-calendrier.webp" alt="">`)}
+      <div class="grid moments">${MOMENTS.map(m=>`<button class="big moment ${m.id}" data-moment="${m.id}"><span class="pic icon" aria-hidden="true"><img src="img/act/moment-${m.id}.webp" alt=""></span><span class="lbl">${m.lbl}</span><span class="sub">${m.sub}</span></button>`).join("")}</div></div>`;
   }
   else if(s.view==="choix"){
     const acts=visibleActs(s.moment);
     const n=s.choix.length;
     app.innerHTML=`<div class="wrap kid">${nav()}${q("Quelles activités tu as envie de faire ?",`Choisis jusqu'à ${MAXCHOIX} activités.`)}
-      <div class="grid acts">${acts.map(a=>{const i=s.choix.indexOf(a.id);return `<button class="big act" data-act="${esc(a.id)}" aria-pressed="${i>=0}"><span class="badge" aria-hidden="true">✓</span><span class="pic" aria-hidden="true">${esc(a.e)}</span><span class="name">${esc(a.l)}</span></button>`}).join("")}</div>
+      <div class="grid acts">${acts.map(a=>{const i=s.choix.indexOf(a.id);return `<button class="big act" data-act="${esc(a.id)}" aria-pressed="${i>=0}"><span class="badge" aria-hidden="true">✓</span>${actIcon(a)}<span class="name">${esc(a.l)}</span></button>`}).join("")}</div>
       ${s.choix.some(id=>id.endsWith(":autre"))?`<div class="idea"><label for="autreTxt">➕ Quelle autre activité ?</label>
         <small>Un grand peut l'écrire pour toi.</small>
         <input id="autreTxt" maxlength="120" placeholder="Par exemple : faire une cabane" value="${esc(s.autre)}" style="font-size:1.2rem"></div>`:""}
