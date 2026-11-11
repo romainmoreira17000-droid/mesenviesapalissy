@@ -188,10 +188,12 @@ function render(){
       <div class="cyc elem"><div class="cycle-title">Élémentaire</div><div class="grid classes">${CLASSES.filter(c=>c.cyc==="elem").map(btn).join("")}</div></div></div>`;
   }
   else if(s.view==="hub"){
-    const door=(cls,go,pic,lbl,sub)=>`<button class="big door ${cls}" data-go="${go}"><span class="pic" aria-hidden="true">${pic}</span><span class="lbl">${lbl}</span><span class="sub">${sub}</span></button>`;
+    const STK={moment:"envies",ameliorer:"ameliore",explorer:"decouvrir",libre:"exprime"};
+    let gi=1;
+    const door=(cls,go,pic,lbl,sub)=>`<button class="big door ${cls}" data-go="${go}"><span class="pic${STK[go]?" sticker":""}" aria-hidden="true">${STK[go]?`<img src="img/porte-${STK[go]}-${genre(gi++)}.webp" alt="">`:pic}</span><span class="lbl">${lbl}</span><span class="sub">${sub}</span></button>`;
     app.innerHTML=`<div class="wrap kid">${nav()}${q("Qu'est-ce que tu veux faire ?","",null,true)}
       <div class="grid hub">
-        <button class="big door emo star" data-go="emo"><span class="pic">${emoImg("joie")}</span><span class="lbl">Mes émotions</span><span class="sub">Comment je me sens aujourd'hui</span></button>
+        <button class="big door emo star" data-go="emo"><span class="pic sticker"><img src="img/porte-emotions-${genre(0)}.webp" alt=""></span><span class="lbl">Mes émotions</span><span class="sub">Comment je me sens aujourd'hui</span></button>
         ${CAL.isOpen(config.ouvertures,"env")?door("env","moment","🎯","Mes envies d'activités","Choisir ce que j'ai envie de faire"):""}
         ${Object.entries(PTYPES).filter(([k])=>CAL.isOpen(config.ouvertures,k)).map(([k,p])=>door(p.cls,k,p.pic,p.lbl,p.sub)).join("")}
       </div></div>`;
