@@ -1,4 +1,4 @@
-# Mes envies à Palissy
+# Ma parole compte !
 
 Application pour recueillir les envies des enfants, de la maternelle au CM2, au centre de loisirs : périscolaire, mercredi et pause du midi.
 
