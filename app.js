@@ -44,7 +44,7 @@ const emoById=id=>EMOS.find(e=>e[0]===id)||[id,"❔",id,"#eee"];
 const CAUSES=[["copains","🤝","Les copains"],["jeu","🎲","Un jeu"],["activite","🎨","Une activité"],["cantine","🍽️","La cantine"],["ecole","🏫","L'école"],
   ["maison","🏠","La maison"],["adulte","🧑","Un adulte"],["sais","🤷","Je ne sais pas"],["autre","➕","Autre chose"]];
 /* Icônes illustrées des activités (img/act/) ; sinon l'émoticône. */
-const ACT_IMG={peri:{jeux:"jeux",dessin:"dessin",lecture:"biblio",ballon:"foot",calme:"calme",musique:"chant",dehors:"sport"},
+const ACT_IMG={peri:{lego:"lego",pate:"pate",perles:"perles",devoirs:"devoirs",dinette:"dinette",jeux:"jeux",dessin:"dessin",lecture:"biblio",ballon:"foot",calme:"calme",musique:"chant",dehors:"sport"},
   mer:{piscine:"piscine",sortie:"sortie",cinema:"cinema",musee:"musee",cuisine:"cuisine",bricolage:"bricolage",grandjeu:"grandjeu",sport:"sport",
     danse:"danse",theatre:"theatre",jardin:"jardin",sciences:"sciences",peinture:"peinture",chasse:"chasse",velo:"velo",spectacle:"spectacle"},
   midi:{foot:"foot",corde:"corde",loup:"loup",cache:"cache",elastique:"elastique",biblio:"biblio",calme:"calme",dessin:"dessin",jeux:"jeux",basket:"basket",chant:"chant",relax:"relax"}};
