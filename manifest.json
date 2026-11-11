@@ -2,26 +2,30 @@
   "name": "Ma parole compte !",
   "short_name": "Ma parole",
   "lang": "fr",
-  "start_url": "./",
+  "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#EAF2F4",
+  "background_color": "#FFFFFF",
   "theme_color": "#EAF2F4",
   "icons": [
     {
-      "src": "icon-192.png",
+      "src": "icon-192-v2.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
-      "src": "icon-512.png",
+      "src": "icon-512-v2.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
-      "src": "icon-512.png",
+      "src": "icon-maskable-v2.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
     }
-  ]
+  ],
+  "id": "./",
+  "scope": "./"
 }
