@@ -45,6 +45,10 @@ Dans Supabase › SQL Editor › New query, collez le contenu du fichier `supaba
 - **Conservation limitée** : prénom d'un enfant 7 jours, émotions et coordonnées des familles 3 mois, tout le reste 13 mois. Le nettoyage se fait à chaque connexion d'un animateur, et chaque jour si `supabase-nettoyage.sql` a été exécuté dans Supabase.
 - **Entretien quotidien** (`.github/workflows/entretien.yml`) : GitHub visite la base chaque jour pour éviter sa mise en pause (offre gratuite Supabase). GitHub suspend cette tâche après 60 jours sans modification du dépôt : il suffit alors de la réactiver dans l'onglet Actions.
 
+### Calendrier d'ouverture
+
+Onglet 📅 Calendrier de l'espace animateur. Chaque espace (enfants : envies d'activités, j'améliore, j'aimerais découvrir, je m'exprime ; familles : satisfaction, améliorations, expression libre) peut être toujours ouvert, fermé, ou ouvert sur des périodes (dates incluses). Un espace fermé disparaît de l'écran. « Mes émotions » reste ouvert tous les jours et est mis en avant.
+
 ## Qui peut faire quoi
 
 | | Enfants et familles | Animateur validé |

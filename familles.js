@@ -8,6 +8,8 @@ function toast(t){const el=$("#toast");el.textContent=t;el.hidden=false;clearTim
 
 const blank=()=>({temps:[],niveaux:[],notes:{},global:null,recommande:null,tags:[],texte:"",idees:"",savoir:"",contact:"",prec:{temps:"",critere:"",theme:""}});
 let f=blank(), view="accueil", busy=false;
+let famConf={}, confLoaded=false;
+const open=k=>CAL.isOpen(famConf.ouvertures,"fam_"+k);
 const VIEWS=["accueil","satisfaction","amelioration","libre","merci"];
 
 function chips(name,list,selected,multi=true){
@@ -28,11 +30,11 @@ function render(){
     const door=(k,cls,sub)=>`<a class="big door ${cls}" href="#${k}"><span class="pic" aria-hidden="true">${TYPES[k].pic}</span><span class="lbl">${TYPES[k].lbl}</span><span class="sub">${sub}</span></a>`;
     app.innerHTML=`<div class="wrap">
       <div class="fam-intro"><h2>Bonjour !</h2><p>Votre avis nous aide à améliorer l'accueil de vos enfants au périscolaire, le mercredi et à la pause du midi. Cela prend 2 à 5 minutes.</p></div>
-      <div class="grid hub">
-        ${door("satisfaction","env","Le questionnaire : notez ce qui vous plaît, ou moins")}
-        ${door("amelioration","ame","Vos propositions, vos idées d'activités")}
-        ${door("libre","lib","Dites-nous ce que vous voulez")}
-      </div>
+      ${!confLoaded?`<div class="empty">Chargement…</div>`:["satisfaction","amelioration","libre"].some(open)?`<div class="grid hub">
+        ${open("satisfaction")?door("satisfaction","env","Le questionnaire : notez ce qui vous plaît, ou moins"):""}
+        ${open("amelioration")?door("amelioration","ame","Vos propositions, vos idées d'activités"):""}
+        ${open("libre")?door("libre","lib","Dites-nous ce que vous voulez"):""}
+      </div>`:`<div class="fam-intro"><h2>Merci de votre visite !</h2><p>Les questionnaires sont fermés pour le moment.${(()=>{const n=["satisfaction","amelioration","libre"].map(k=>CAL.nextOpen(famConf.ouvertures,"fam_"+k)).filter(Boolean).sort()[0];return n?` Ils rouvriront le <b>${CAL.fmt(n)}</b>.`:" Revenez bientôt.";})()}</p></div>`}
       ${document.referrer.includes("index.html")||new URLSearchParams(location.search).has("app")?`<div><a class="back" href="index.html">← Accueil (Enfants / Familles)</a></div>`:""}</div>`;
     return;
   }
@@ -42,6 +44,7 @@ function render(){
       <div class="row"><a class="go" href="#accueil">Donner un autre avis</a></div></div>`;
     return;
   }
+  if(confLoaded&&!open(view)){ location.hash="accueil"; return; }
   const T=TYPES[view];
   let body="";
   if(view==="satisfaction"){
@@ -122,3 +125,5 @@ window.addEventListener("hashchange",route);
 if(CFG.nomCentre){ const t=`Espace familles · ${CFG.nomCentre}`; $("#famTitle").textContent=t; document.title=t; }
 if(!sb){ const b=$("#setupBanner"); b.hidden=false; b.textContent="L'appli n'est pas encore reliée à sa base de données (fichier config.js)."; }
 route();
+if(sb) sb.from("reglages").select("data").eq("id",1).maybeSingle().then(({data})=>{ famConf=data?.data||{}; confLoaded=true; route(); },()=>{ confLoaded=true; route(); });
+else confLoaded=true;

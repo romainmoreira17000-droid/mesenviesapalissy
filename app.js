@@ -214,9 +214,9 @@ function render(){
     const door=(cls,go,pic,lbl,sub)=>`<button class="big door ${cls}" data-go="${go}"><span class="pic" aria-hidden="true">${pic}</span><span class="lbl">${lbl}</span><span class="sub">${sub}</span></button>`;
     app.innerHTML=`<div class="wrap kid">${nav()}${q("Qu'est-ce que tu veux faire ?","",null,true)}
       <div class="grid hub">
-        ${door("env","moment","🎯","Mes envies d'activités","Choisir ce que j'ai envie de faire")}
-        ${door("emo","emo","😊","Mes émotions","Comment je me sens aujourd'hui")}
-        ${Object.entries(PTYPES).map(([k,p])=>door(p.cls,k,p.pic,p.lbl,p.sub)).join("")}
+        <button class="big door emo star" data-go="emo"><span class="pic" aria-hidden="true">😊</span><span class="lbl">Mes émotions</span><span class="sub">Comment je me sens aujourd'hui</span><span class="daily">Tous les jours</span></button>
+        ${CAL.isOpen(config.ouvertures,"env")?door("env","moment","🎯","Mes envies d'activités","Choisir ce que j'ai envie de faire"):""}
+        ${Object.entries(PTYPES).filter(([k])=>CAL.isOpen(config.ouvertures,k)).map(([k,p])=>door(p.cls,k,p.pic,p.lbl,p.sub)).join("")}
       </div></div>`;
   }
   else if(s.view==="moment"){
@@ -507,10 +507,12 @@ function renderAdmin(app){
     <button class="chip" data-tab="par" aria-pressed="${adm.tab==="par"}">💬 Paroles des enfants</button>
     <button class="chip" data-tab="emo" aria-pressed="${adm.tab==="emo"}">😊 Émotions${(()=>{const n=emotions.filter(e=>e.parler&&!e.traite).length;return n?` <span class="pill" style="background:#FF5C5C;color:#fff">${n}</span>`:"";})()}</button>
     <button class="chip" data-tab="fam" aria-pressed="${adm.tab==="fam"}">👨‍👩‍👧 Familles</button>
+    <button class="chip" data-tab="cal" aria-pressed="${adm.tab==="cal"}">📅 Calendrier</button>
     <button class="chip" data-tab="acts" aria-pressed="${adm.tab==="acts"}">🧩 Activités proposées</button>
     <button class="chip" data-tab="set" aria-pressed="${adm.tab==="set"}">⚙️ Aide</button></div>
     <div class="tabs"><span class="muted" style="font-size:.85rem;align-self:center">Mis à jour à ${upd}</span><button class="chip" id="refresh">↻ Actualiser</button><button class="chip" id="logout">Se déconnecter</button></div></div>`;
   if(adm.tab==="acts") return app.innerHTML=`<div class="wrap">${tabs}${renderActsAdmin()}</div>`;
+  if(adm.tab==="cal") return app.innerHTML=`<div class="wrap">${tabs}${renderCalendrier()}</div>`;
   if(adm.tab==="set") return app.innerHTML=`<div class="wrap">${tabs}${renderSettings()}</div>`;
   if(adm.tab==="par") return app.innerHTML=`<div class="wrap">${tabs}${renderParoles()}</div>`;
   if(adm.tab==="fam") return app.innerHTML=`<div class="wrap">${tabs}${renderFamilles()}</div>`;
@@ -719,6 +721,29 @@ function exportTab(){
         (r.tags||[]).map(t=>t==="autre"&&P.theme?"Autre : "+P.theme:(F.TAGS.find(x=>x[0]===t)||[0,0,t])[2]).join(", "),r.texte||"",r.idees||"",r.savoir||"",r.contact||""];}));
   }
 }
+let calDraft=null;
+function calStatus(ouv,cat){
+  if(CAL.isOpen(ouv,cat)) return `<span class="pill" style="background:#55D68F;color:#fff">Ouvert aujourd'hui</span>`;
+  const n=CAL.nextOpen(ouv,cat);
+  return n?`<span class="pill" style="background:#FFB347">Ouvre le ${CAL.fmt(n)}</span>`:`<span class="pill" style="background:#D3DEE4">Fermé</span>`;
+}
+function renderCalendrier(){
+  if(!calDraft) calDraft=JSON.parse(JSON.stringify(config.ouvertures||{}));
+  const row=([id,ic,lb,qui])=>{const o=calDraft[id]||{mode:"toujours"};
+    return `<div class="calrow"><div class="calname">${ic} <b>${esc(lb)}</b> ${calStatus(calDraft,id)}</div>
+      <select data-calmode="${id}" aria-label="Ouverture : ${esc(lb)}">${[["toujours","Toujours ouvert"],["dates","Ouvert sur certaines périodes"],["ferme","Fermé"]].map(([v,l])=>`<option value="${v}" ${(o.mode||"toujours")===v?"selected":""}>${l}</option>`).join("")}</select>
+      ${o.mode==="dates"?`<div class="periodes">${(o.periodes||[]).map((p,i)=>`<div class="periode">du <input type="date" data-calp="${id}" data-i="${i}" data-f="debut" value="${esc(p.debut||"")}" aria-label="Début"> au <input type="date" data-calp="${id}" data-i="${i}" data-f="fin" value="${esc(p.fin||"")}" aria-label="Fin">
+        <button class="btn small" data-caldel="${id}" data-i="${i}" aria-label="Retirer cette période">✕</button></div>`).join("")}
+        <button class="btn small" data-caladd="${id}">+ Ajouter une période</button></div>`:""}</div>`;};
+  const grp=g=>CAL.CATS.filter(c=>c[3]===g).map(row).join("");
+  const dirty=JSON.stringify(calDraft)!==JSON.stringify(config.ouvertures||{});
+  return `<div class="panel"><h3>📅 Quand chaque espace est-il ouvert ?</h3>
+      <p class="muted" style="margin:0">Un espace fermé disparaît de l'écran des enfants ou des familles. Les dates sont incluses (du premier au dernier jour).</p>
+      <div class="calrow fixed"><div class="calname">😊 <b>Mes émotions</b> <span class="pill" style="background:#55D68F;color:#fff">Ouvert tous les jours</span></div><span class="muted">Toujours ouvert, mis en avant pour les enfants.</span></div>
+      <h3 style="margin-top:6px">🧒 Enfants</h3>${grp("Enfants")}
+      <h3 style="margin-top:6px">👨‍👩‍👧 Familles</h3>${grp("Familles")}
+      <div class="tabs"><button class="btn primary" id="calSave" ${dirty?"":"disabled"}>Enregistrer le calendrier</button>${dirty?`<button class="btn" id="calReset">Annuler les changements</button><span class="muted" style="align-self:center">Modifications non enregistrées</span>`:""}</div></div>`;
+}
 function renderActsAdmin(){
   return MOMENTS.map(m=>`<div class="panel"><h3>${m.pic} ${m.lbl}</h3>
     <p class="muted" style="margin:0;font-size:.9rem">Touche une activité pour la cacher ou la remettre. Les activités ajoutées peuvent être retirées.</p>
@@ -795,7 +820,7 @@ async function deleteFiltered(){
 async function loadConfig(){
   if(!sb) return;
   const {data,error}=await sb.from("reglages").select("data").eq("id",1).maybeSingle();
-  if(!error&&data?.data){ config={added:{peri:[],mer:[],midi:[]},hidden:[],...data.data}; if(["choix","adm"].includes(s.view)) render(); }
+  if(!error&&data?.data){ config={added:{peri:[],mer:[],midi:[]},hidden:[],...data.data}; if(["choix","hub"].includes(s.view)||(s.view==="adm"&&adm.tab!=="cal")) render(); }
 }
 
 /* ---------------- Événements ---------------- */
@@ -817,6 +842,12 @@ document.addEventListener("click",e=>{
   if(t.id==="copyTopic"){ navigator.clipboard?.writeText(d.url).then(()=>toast("Nom du canal copié."),()=>toast("Copie impossible : sélectionnez le nom à la main.")); return; }
   if(t.id==="ntfyTest"){ fetch("https://ntfy.sh/"+encodeURIComponent(d.topic),{method:"POST",body:"Test : les alertes « un enfant veut parler » arrivent bien sur ce téléphone.",headers:{Title:"Mes envies : test d'alerte",Tags:"white_check_mark"}})
       .then(r=>toast(r.ok?"Alerte de test envoyée : regardez votre téléphone.":"Envoi impossible."),()=>toast("Envoi impossible : vérifiez la connexion.")); return; }
+  if(d.caladd){ const o=calDraft[d.caladd]; const t0=CAL.today(), t1=new Date(Date.now()+13*864e5); o.periodes=[...(o.periodes||[]),{debut:t0,fin:t1.getFullYear()+"-"+String(t1.getMonth()+1).padStart(2,"0")+"-"+String(t1.getDate()).padStart(2,"0")}]; render(); return; }
+  if(d.caldel){ calDraft[d.caldel].periodes.splice(+d.i,1); render(); return; }
+  if(t.id==="calReset"){ calDraft=null; render(); return; }
+  if(t.id==="calSave"){ for(const [id,o] of Object.entries(calDraft)){ if(o.mode==="dates"){ o.periodes=(o.periodes||[]).filter(p=>p.debut&&p.fin);
+        if(o.periodes.some(p=>p.fin<p.debut)) return toast("Une période se termine avant de commencer : corrigez les dates."); } }
+    saveConfig({ouvertures:calDraft}).then(()=>{calDraft=null;render();}); return; }
   if(t.id==="voiceTest"){ say("Bonjour ! La voix fonctionne sur cet appareil.",true); setTimeout(()=>{const el=$("#voiceDiag"); if(el) el.textContent=voiceDiag();},1200); return; }
   if(t.id==="notifOn"){ unlockAlerts(); try{ Notification.requestPermission().then(()=>render()); }catch(e){ toast("Ce navigateur ne gère pas les notifications."); } return; }
   if(t.id==="notifTest"){ unlockAlerts(); setTimeout(()=>alertAnim([{id:"test"+Date.now(),classe:"GS",emotion:"tristesse",prenom:"Test"}]),300); return; }
@@ -846,7 +877,7 @@ document.addEventListener("click",e=>{
   if(d.go){go(d.go);return;}
   if(t.id==="send"){sendEnvies();return;}
   if(t.id==="sendP"){sendParole();return;}
-  if(d.tab){adm.tab=d.tab;adm.confirm=false;adm.delp=null;if(d.tab==="set")loadTeam();render();return;}
+  if(d.tab){calDraft=null;adm.tab=d.tab;adm.confirm=false;adm.delp=null;if(d.tab==="set")loadTeam();render();return;}
   if(t.id==="askDel"){adm.confirm=true;render();return;}
   if(t.id==="noDel"){adm.confirm=false;render();return;}
   if(t.id==="doDel"){deleteFiltered();return;}
@@ -860,14 +891,17 @@ document.addEventListener("click",e=>{
     const added={peri:[],mer:[],midi:[],...config.added}; added[m]=[...(added[m]||[]),{id:m+":c"+Date.now().toString(36),e:em,l:l.slice(0,40)}]; saveConfig({added}); return;}
 });
 document.addEventListener("keydown",e=>{ if((e.key==="Enter"||e.key===" ")&&e.target.dataset?.toggle){e.preventDefault();e.target.click();} });
-document.addEventListener("change",e=>{ if(["fm","fc","fp","pt","ft"].includes(e.target.id)){adm[e.target.id]=e.target.value;adm.confirm=false;render();} });
+document.addEventListener("change",e=>{
+  const cd=e.target.dataset||{};
+  if(cd.calmode){ const o=calDraft[cd.calmode]=calDraft[cd.calmode]||{}; o.mode=e.target.value; if(o.mode==="dates"&&!(o.periodes||[]).length){ const t1=new Date(Date.now()+13*864e5); o.periodes=[{debut:CAL.today(),fin:t1.getFullYear()+"-"+String(t1.getMonth()+1).padStart(2,"0")+"-"+String(t1.getDate()).padStart(2,"0")}]; } render(); return; }
+  if(cd.calp){ calDraft[cd.calp].periodes[+cd.i][cd.f]=e.target.value; render(); return; } if(["fm","fc","fp","pt","ft"].includes(e.target.id)){adm[e.target.id]=e.target.value;adm.confirm=false;render();} });
 window.addEventListener("online",flushQueue);
 
 /* ---------------- Démarrage ---------------- */
 if(CFG.nomCentre){ const t=`Mes envies à ${CFG.nomCentre}`; $("#appTitle").textContent=t; document.title=t; baseTitle=t; }
 if(!configured){ const b=$("#setupBanner"); b.hidden=false; b.textContent="L'appli n'est pas encore reliée à Supabase : les réponses restent sur cette tablette en attendant. Remplis le fichier config.js (voir le README)."; }
 render(); showQueue();
-loadConfig(); flushQueue(); setInterval(flushQueue,60000);
+loadConfig(); flushQueue(); setInterval(flushQueue,60000); setInterval(loadConfig,5*60000);
 /* connexion gardée (« Rester connecté ») : on la reprend sans redemander le mot de passe */
 if(sb&&remember) sb.auth.getSession().then(async({data})=>{
   if(!data?.session){ setRemember(false); return; }

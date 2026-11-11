@@ -23,3 +23,15 @@ window.FAM = {
     amelioration:{pic:"🔧",lbl:"Améliorations et idées",col:"var(--peri)"},
     libre:{pic:"💬",lbl:"Expression libre",col:"var(--midi)"}}
 };
+
+/* Calendrier d'ouverture des espaces (réglé par les animateurs, onglet 📅 Calendrier). */
+window.CAL = {
+  CATS: [["env","🎯","Mes envies d'activités","Enfants"],["ameliorer","🔧","J'améliore le centre","Enfants"],["explorer","🧭","J'aimerais découvrir","Enfants"],
+    ["libre","💬","Je m'exprime","Enfants"],["fam_satisfaction","⭐","Satisfaction","Familles"],["fam_amelioration","🔧","Améliorations et idées","Familles"],["fam_libre","💬","Expression libre","Familles"]],
+  today(){ const d=new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); },
+  isOpen(ouv,cat){ const o=(ouv||{})[cat]; if(!o||o.mode!=="ferme"&&o.mode!=="dates") return true; if(o.mode==="ferme") return false;
+    const t=this.today(); return (o.periodes||[]).some(p=>p.debut&&p.fin&&p.debut<=t&&t<=p.fin); },
+  nextOpen(ouv,cat){ const o=(ouv||{})[cat]; if(!o||o.mode!=="dates") return null; const t=this.today();
+    const f=(o.periodes||[]).filter(p=>p.debut&&p.debut>t).map(p=>p.debut).sort(); return f[0]||null; },
+  fmt(d){ const [y,m,j]=d.split("-").map(Number); return new Date(y,m-1,j).toLocaleDateString("fr-FR",{day:"numeric",month:"long"}); }
+};
