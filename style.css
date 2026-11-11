@@ -351,3 +351,10 @@ a.btn{color:inherit;text-decoration:none;display:inline-flex;align-items:center}
 .hero .fox.mascotte{height:min(240px,38vw)}
 .hero .fox.right{transform:scaleX(-1)}
 @media (max-width:560px){.hero .fox.mascotte{height:min(190px,40vw)}.hero .sign{font-size:1.25rem;padding:10px 12px}}
+.who .pic.duoimg{position:relative;overflow:hidden;font-size:0}
+.who .pic.duoimg img{position:absolute;width:62%;height:62%;border-radius:50%;box-shadow:0 0 0 3px #fff}
+.who .pic.duoimg img:first-child{left:6%;top:8%}
+.who .pic.duoimg img:last-child{right:6%;bottom:8%}
+.who .pic.duoimg.fam img{border-radius:0;box-shadow:none;height:88%;width:auto;top:8%;bottom:auto}
+.who .pic.duoimg.fam img:first-child{left:10%}
+.who .pic.duoimg.fam img:last-child{right:10%;left:auto}
