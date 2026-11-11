@@ -413,3 +413,6 @@ header.top .logo h1 small{display:block;font-size:.55em;font-weight:700;opacity:
 @media (max-width:520px){.moment .pic.icon{width:66px;height:62px}.act .pic.icon{width:66px;height:58px}}
 .act .pic.icon{width:104px;height:72px}
 @media (max-width:520px){.act .pic.icon{width:96px;height:66px}}
+/* les icônes restent dans leur cadre (correctif téléphones et tablettes) */
+.pic.icon{position:relative;overflow:hidden}
+.pic.icon img{position:absolute;inset:0;width:100%;height:100%;max-width:none;max-height:none;object-fit:contain}
