@@ -191,7 +191,7 @@ function render(){
     const door=(cls,go,pic,lbl,sub)=>`<button class="big door ${cls}" data-go="${go}"><span class="pic" aria-hidden="true">${pic}</span><span class="lbl">${lbl}</span><span class="sub">${sub}</span></button>`;
     app.innerHTML=`<div class="wrap kid">${nav()}${q("Qu'est-ce que tu veux faire ?","",null,true)}
       <div class="grid hub">
-        <button class="big door emo star" data-go="emo"><span class="pic">${emoImg("joie")}</span><span class="lbl">Mes émotions</span><span class="sub">Comment je me sens aujourd'hui</span><span class="daily">Tous les jours</span></button>
+        <button class="big door emo star" data-go="emo"><span class="pic">${emoImg("joie")}</span><span class="lbl">Mes émotions</span><span class="sub">Comment je me sens aujourd'hui</span></button>
         ${CAL.isOpen(config.ouvertures,"env")?door("env","moment","🎯","Mes envies d'activités","Choisir ce que j'ai envie de faire"):""}
         ${Object.entries(PTYPES).filter(([k])=>CAL.isOpen(config.ouvertures,k)).map(([k,p])=>door(p.cls,k,p.pic,p.lbl,p.sub)).join("")}
       </div></div>`;

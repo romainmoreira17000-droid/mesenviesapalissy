@@ -384,3 +384,4 @@ a.btn{color:inherit;text-decoration:none;display:inline-flex;align-items:center}
 .tile:focus-visible{outline:4px solid var(--sel);outline-offset:6px;border-radius:24px}
 .tsub{font-family:var(--display);font-weight:700;font-size:clamp(1rem,3.4vw,1.25rem);color:var(--indigo);text-align:center;line-height:1.15;background:rgba(255,255,255,.85);padding:4px 12px;border-radius:999px}
 @media (prefers-reduced-motion:reduce){.tile img{transition:none}}
+.door.emo.star{padding-top:16px}
