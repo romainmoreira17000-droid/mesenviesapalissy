@@ -875,7 +875,7 @@ document.addEventListener("change",e=>{
 window.addEventListener("online",flushQueue);
 
 /* ---------------- Démarrage ---------------- */
-if(CFG.nomCentre){ const t=`Mes envies à ${CFG.nomCentre}`; $("#appTitle").textContent=t; document.title=t; baseTitle=t; }
+{ const t="Ma parole compte !"; $("#appTitle").textContent=t; document.title=t+(CFG.nomCentre?" · "+CFG.nomCentre:""); baseTitle=document.title; }
 if(!configured){ const b=$("#setupBanner"); b.hidden=false; b.textContent="L'appli n'est pas encore reliée à Supabase : les réponses restent sur cette tablette en attendant. Remplis le fichier config.js (voir le README)."; }
 render(); showQueue();
 loadConfig(); flushQueue(); setInterval(flushQueue,60000); setInterval(loadConfig,5*60000);

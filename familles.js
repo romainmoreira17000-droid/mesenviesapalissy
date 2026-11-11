@@ -122,7 +122,7 @@ document.addEventListener("input",e=>{ const k=e.target.dataset?.field; if(k) f[
 function route(){ const h=location.hash.slice(1); view=VIEWS.includes(h)?h:"accueil"; render(); window.scrollTo({top:0}); }
 window.addEventListener("hashchange",route);
 
-if(CFG.nomCentre){ const t=`Espace familles · ${CFG.nomCentre}`; $("#famTitle").textContent=t; document.title=t; }
+{ $("#famTitle").innerHTML="Ma parole compte !<small>Espace familles"+(CFG.nomCentre?" · "+CFG.nomCentre.replace(/[<>&]/g,""):"")+"</small>"; document.title="Espace familles · Ma parole compte !"; }
 if(!sb){ const b=$("#setupBanner"); b.hidden=false; b.textContent="L'appli n'est pas encore reliée à sa base de données (fichier config.js)."; }
 route();
 if(sb) sb.from("reglages").select("data").eq("id",1).maybeSingle().then(({data})=>{ famConf=data?.data||{}; confLoaded=true; route(); },()=>{ confLoaded=true; route(); });
