@@ -167,8 +167,9 @@ function render(){
   $("#voiceBtn").setAttribute("aria-pressed",voice);
   $("#voiceBtn").textContent=voice?"🔊 Voix":"🔇 Voix";
   $("#adultBtn").textContent=s.view.startsWith("adm")?"← Retour aux enfants":"Espace animateur";
+  $("#voiceBtn").hidden=s.view.startsWith("adm");
   if(s.view==="adm-login") return renderLogin(app);
-  if(s.view==="adm") return renderAdmin(app);
+  if(s.view==="adm"){ renderAdmin(app); const at=document.querySelector(".admtab[aria-pressed=true]"); if(at){ const nav=at.parentElement; nav.scrollLeft=Math.max(0,at.offsetLeft-nav.clientWidth/2+at.offsetWidth/2); } return; }
 
   if(s.view==="accueil"){
     app.innerHTML=`<div class="wrap kid">
@@ -479,15 +480,11 @@ function stateMsg(){return loadState==="err"?"Impossible de lire les réponses. 
 function renderAdmin(app){
   const upd=lastLoad?new Date(lastLoad).toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"}):"–";
   const nTodo=Math.max(todoCount,emotions.filter(e=>e.parler&&!e.traite).length);
-  const tabs=`<button class="todo-banner" id="todoBanner" data-tab="emo" ${nTodo?"":"hidden"}>🙋 <b>${nTodo}</b> enfant(s) veulent parler à un animateur · Voir →</button><div class="adminbar"><div class="tabs">
-    <button class="chip" data-tab="res" aria-pressed="${adm.tab==="res"}">📊 Envies d'activités</button>
-    <button class="chip" data-tab="par" aria-pressed="${adm.tab==="par"}">💬 Paroles des enfants</button>
-    <button class="chip" data-tab="emo" aria-pressed="${adm.tab==="emo"}">😊 Émotions${(()=>{const n=emotions.filter(e=>e.parler&&!e.traite).length;return n?` <span class="pill" style="background:#FF5C5C;color:#fff">${n}</span>`:"";})()}</button>
-    <button class="chip" data-tab="fam" aria-pressed="${adm.tab==="fam"}">👨‍👩‍👧 Familles</button>
-    <button class="chip" data-tab="cal" aria-pressed="${adm.tab==="cal"}">📅 Calendrier</button>
-    <button class="chip" data-tab="acts" aria-pressed="${adm.tab==="acts"}">🧩 Activités proposées</button>
-    <button class="chip" data-tab="set" aria-pressed="${adm.tab==="set"}">⚙️ Aide</button></div>
-    <div class="tabs"><span class="muted" style="font-size:.85rem;align-self:center">Mis à jour à ${upd}</span><button class="chip" id="refresh">↻ Actualiser</button><button class="chip" id="logout">Se déconnecter</button></div></div>`;
+  const nEmo=emotions.filter(e=>e.parler&&!e.traite).length;
+  const T=[["res","📊","Envies"],["emo","😊","Émotions"],["par","💬","Paroles"],["fam","👨‍👩‍👧","Familles"],["cal","📅","Calendrier"],["acts","🧩","Activités"],["set","⚙️","Aide"]];
+  const tabs=`<button class="todo-banner" id="todoBanner" data-tab="emo" ${nTodo?"":"hidden"}>🙋 <b>${nTodo}</b> enfant(s) veulent parler à un animateur · Voir →</button>
+    <div class="admbar"><nav class="admtabs" aria-label="Onglets de l'espace animateur">${T.map(([id,ic,lb])=>`<button class="admtab" data-tab="${id}" aria-pressed="${adm.tab===id}"><span aria-hidden="true">${ic}</span>${lb}${id==="emo"&&nEmo?`<b class="badge-n">${nEmo}</b>`:""}</button>`).join("")}</nav>
+    <div class="admtools"><span class="upd" title="Dernière mise à jour">${upd}</span><button class="iconbtn" id="refresh" title="Actualiser" aria-label="Actualiser">↻</button><button class="iconbtn" id="logout" title="Se déconnecter" aria-label="Se déconnecter">⏻</button></div></div>`;
   if(adm.tab==="acts") return app.innerHTML=`<div class="wrap">${tabs}${renderActsAdmin()}</div>`;
   if(adm.tab==="cal") return app.innerHTML=`<div class="wrap">${tabs}${renderCalendrier()}</div>`;
   if(adm.tab==="set") return app.innerHTML=`<div class="wrap">${tabs}${renderSettings()}</div>`;
