@@ -141,40 +141,16 @@ async function flushQueue(){
   }finally{flushing=false; showQueue();}
 }
 
-/* ---------------- Le renard mascotte (dessin vectoriel) ---------------- */
-function fox(pose="wave",cls="fox"){
-  const O="#F28A2E",C="#FFF4E6",B="#4A2A17",D="#3B2314";
-  const happy=pose==="cheer";
-  const eyes=happy
-    ?`<path d="M70 84q10-12 20 0M110 84q10-12 20 0" stroke="${D}" stroke-width="6" fill="none" stroke-linecap="round"/>`
-    :`<ellipse cx="80" cy="84" rx="9" ry="11" fill="${D}"/><ellipse cx="120" cy="84" rx="9" ry="11" fill="${D}"/><circle cx="83" cy="79" r="3.5" fill="#fff"/><circle cx="123" cy="79" r="3.5" fill="#fff"/>`;
-  const head=`<path d="M44 62 L36 6 L88 38Z" fill="${O}"/><path d="M50 54 L44 20 L76 42Z" fill="${B}"/>
-    <path d="M156 62 L164 6 L112 38Z" fill="${O}"/><path d="M150 54 L156 20 L124 42Z" fill="${B}"/>
-    <ellipse cx="100" cy="82" rx="66" ry="52" fill="${O}"/>
-    <path d="M34 86 Q62 82 100 102 Q138 82 166 86 Q152 134 100 136 Q48 134 34 86Z" fill="${C}"/>
-    ${eyes}
-    <ellipse cx="100" cy="102" rx="10" ry="7" fill="${D}"/>
-    <path d="M86 112 Q100 132 114 112Z" fill="#B23A3A" stroke="${D}" stroke-width="3" stroke-linejoin="round"/>
-    <path d="M93 121 Q100 128 107 121" fill="#FF8C8C"/>
-    <circle cx="62" cy="106" r="9" fill="#FF9AA2" opacity=".55"/><circle cx="138" cy="106" r="9" fill="#FF9AA2" opacity=".55"/>`;
-  if(pose==="peek"){
-    return `<svg class="${cls}" viewBox="0 0 200 150" aria-hidden="true">${head}<ellipse cx="62" cy="140" rx="16" ry="10" fill="${B}"/><ellipse cx="138" cy="140" rx="16" ry="10" fill="${B}"/></svg>`;
-  }
-  const arm=(d,px,py)=>`<path d="${d}" stroke="${O}" stroke-width="17" stroke-linecap="round" fill="none"/><circle cx="${px}" cy="${py}" r="11" fill="${B}"/>`;
-  const arms=happy
-    ? arm("M66 152 Q40 132 34 102",34,98)+arm("M134 152 Q160 132 166 102",166,98)
-    : arm("M64 154 Q46 172 54 192",54,196)+arm("M136 150 Q166 132 170 100",170,96);
-  return `<svg class="${cls}" viewBox="0 0 210 232" aria-hidden="true">
-    <path d="M136 214 C196 206 206 136 176 112 C184 156 166 184 128 190Z" fill="${O}"/>
-    <path d="M176 112 C190 126 192 146 184 158 C178 138 172 124 176 112Z" fill="${C}"/>
-    <ellipse cx="100" cy="176" rx="46" ry="46" fill="${O}"/>
-    <ellipse cx="100" cy="184" rx="27" ry="32" fill="${C}"/>
-    <path d="M70 140 Q74 178 72 210" stroke="#2F6FD6" stroke-width="10" fill="none" stroke-linecap="round"/>
-    <path d="M130 140 Q126 178 128 210" stroke="#2F6FD6" stroke-width="10" fill="none" stroke-linecap="round"/>
-    ${arms}
-    <ellipse cx="80" cy="220" rx="17" ry="10" fill="${B}"/><ellipse cx="120" cy="220" rx="17" ry="10" fill="${B}"/>
-    ${head}</svg>`;
+/* ---------------- La mascotte (personnage du centre, images dans img/) ---------------- */
+/* Égalité filles-garçons : la fille (f) et le garçon (g) alternent, et l'ordre s'inverse à chaque nouvel enfant. */
+let mixFlip=false;
+const genre=i=>((i+(mixFlip?1:0))%2===0)?"f":"g";
+function fox(pose="wave",cls="fox",g){
+  const src={wave:"perso-assis",cheer:"perso-coeur",peek:"perso-grimpe",calm:"perso-briques"}[pose]||"perso-assis";
+  if(!g) g=pose==="peek"?genre(STEP[s.view]||0):genre(0);
+  return `<img class="${cls} mascotte ${pose}" src="img/${src}-${g}.webp" alt="" aria-hidden="true">`;
 }
+const emoImg=(id,cls="emohead")=>`<img class="${cls}" src="img/emo-${id}-${genre(Math.max(0,EMOS.findIndex(e=>e[0]===id)))}.webp" alt="" aria-hidden="true">`;
 const STEP={emo:3,emo2:4,classe:1,hub:2,moment:3,ameliorer:3,explorer:3,libre:3,choix:4,humeur:4};
 const BACK={emo:"hub",emo2:"emo",classe:"accueil",hub:"classe",moment:"hub",choix:"moment",humeur:"choix",ameliorer:"hub",explorer:"hub",libre:"hub"};
 function nav(){
@@ -196,7 +172,7 @@ function render(){
 
   if(s.view==="accueil"){
     app.innerHTML=`<div class="wrap kid">
-      <div class="hero">${fox("wave")}<div class="sign">Bonjour !<br>Qui es-tu ?<button class="speak" data-say="Bonjour ! Qui es-tu ? Enfants, ou familles ?" aria-label="Écouter">🔊</button></div></div>
+      <div class="hero">${fox("wave","fox","f")}<div class="sign">Bonjour !<br>Qui es-tu ?<button class="speak" data-say="Bonjour ! Qui es-tu ? Enfants, ou familles ?" aria-label="Écouter">🔊</button></div>${fox("wave","fox right","g")}</div>
       <div class="grid choose">
         <button class="big who kids" data-go="classe"><span class="pic" aria-hidden="true">🧒</span><span class="lbl">Enfants</span><span class="sub">Je donne mes envies et mes idées</span></button>
         <a class="big who fams" href="familles.html?app"><span class="pic duo" aria-hidden="true">👩🧒</span><span class="lbl">Familles</span><span class="sub">Parents : votre avis sur le centre</span></a>
@@ -214,7 +190,7 @@ function render(){
     const door=(cls,go,pic,lbl,sub)=>`<button class="big door ${cls}" data-go="${go}"><span class="pic" aria-hidden="true">${pic}</span><span class="lbl">${lbl}</span><span class="sub">${sub}</span></button>`;
     app.innerHTML=`<div class="wrap kid">${nav()}${q("Qu'est-ce que tu veux faire ?","",null,true)}
       <div class="grid hub">
-        <button class="big door emo star" data-go="emo"><span class="pic" aria-hidden="true">😊</span><span class="lbl">Mes émotions</span><span class="sub">Comment je me sens aujourd'hui</span><span class="daily">Tous les jours</span></button>
+        <button class="big door emo star" data-go="emo"><span class="pic">${emoImg("joie")}</span><span class="lbl">Mes émotions</span><span class="sub">Comment je me sens aujourd'hui</span><span class="daily">Tous les jours</span></button>
         ${CAL.isOpen(config.ouvertures,"env")?door("env","moment","🎯","Mes envies d'activités","Choisir ce que j'ai envie de faire"):""}
         ${Object.entries(PTYPES).filter(([k])=>CAL.isOpen(config.ouvertures,k)).map(([k,p])=>door(p.cls,k,p.pic,p.lbl,p.sub)).join("")}
       </div></div>`;
@@ -238,16 +214,16 @@ function render(){
   if(s.view==="choix"&&$("#autreTxt")) $("#autreTxt").addEventListener("input",e=>s.autre=e.target.value);
   if(s.view==="emo"){
     app.innerHTML=`<div class="wrap kid">${nav()}${q("Comment tu te sens ?","Touche l'émotion qui te ressemble.")}
-      <div class="grid emos">${EMOS.map(([id,e,l,c,d,ring])=>`<button class="big emocard" data-emo="${id}" aria-pressed="${s.emo===id}" style="--emo:${c};--ring:${ring}"><span class="badge" aria-hidden="true">✓</span><span class="kidpic"><img src="img/emo-${id}.webp" alt="" width="300" height="300"></span><span class="name">${l}</span><span class="sub">${d}</span></button>`).join("")}</div>
+      <div class="grid emos">${EMOS.map(([id,e,l,c,d,ring])=>`<button class="big emocard" data-emo="${id}" aria-pressed="${s.emo===id}" style="--emo:${c};--ring:${ring}"><span class="badge" aria-hidden="true">✓</span><span class="kidpic">${emoImg(id,"")}</span><span class="name">${l}</span><span class="sub">${d}</span></button>`).join("")}</div>
       ${s.emo?`<div class="idea"><span class="lab">Un peu ou beaucoup ?</span><div class="grid inten">
-        <button class="big tag" data-int="1" aria-pressed="${s.intensite===1}"><span class="badge" aria-hidden="true">✓</span><span class="pic" aria-hidden="true" style="font-size:2rem">${emoById(s.emo)[1]}</span><span class="name">Un peu</span></button>
-        <button class="big tag" data-int="2" aria-pressed="${s.intensite===2}"><span class="badge" aria-hidden="true">✓</span><span class="pic" aria-hidden="true" style="font-size:3.6rem">${emoById(s.emo)[1]}</span><span class="name">Beaucoup</span></button></div></div>`:""}
+        <button class="big tag" data-int="1" aria-pressed="${s.intensite===1}"><span class="badge" aria-hidden="true">✓</span><span class="pic">${emoImg(s.emo,"inthead small")}</span><span class="name">Un peu</span></button>
+        <button class="big tag" data-int="2" aria-pressed="${s.intensite===2}"><span class="badge" aria-hidden="true">✓</span><span class="pic">${emoImg(s.emo,"inthead")}</span><span class="name">Beaucoup</span></button></div></div>`:""}
       <div class="bar"><button class="back" data-go="hub">← Retour</button><button class="go" data-go="emo2" ${s.emo?"":"disabled"}>Suivant →</button></div></div>`;
     return;
   }
   if(s.view==="emo2"){
     const [,e,l]=emoById(s.emo);
-    app.innerHTML=`<div class="wrap kid">${nav()}${q("C'est à cause de quoi ?","Tu peux passer cette question.",e)}
+    app.innerHTML=`<div class="wrap kid">${nav()}${q("C'est à cause de quoi ?","Tu peux passer cette question.",emoImg(s.emo,"qhead"))}
       <div class="grid tags">${CAUSES.map(([id,ic,lb])=>`<button class="big tag" data-cause="${id}" aria-pressed="${s.causes.includes(id)}"><span class="badge" aria-hidden="true">✓</span><span class="pic" aria-hidden="true">${ic}</span><span class="name">${lb}</span></button>`).join("")}</div>
       ${s.causes.includes("autre")?`<div class="idea"><label for="causeAutre">➕ C'est quoi ?</label><small>Un grand peut l'écrire pour toi.</small><input id="causeAutre" maxlength="120" value="${esc(s.causeAutre)}" style="font-size:1.2rem"></div>`:""}
       <div class="idea"><span class="lab">🙋 Tu veux en parler à un animateur ?</span>
@@ -287,8 +263,8 @@ function render(){
     app.innerHTML=`<div class="wrap kid"><div class="merci">
       <div class="bravo"><h2>Merci !</h2><p>Merci de nous avoir dit<br>comment tu te sens.</p>
         ${neg?`<p class="soft">Ce que tu ressens est important.<br>${s.parler&&s.prenom.trim()?"Un animateur va venir te voir.":"Les animateurs sont là pour toi : va les voir quand tu veux."}</p>`:""}</div>
-      ${neg?`<div class="breathe" id="breatheBox"><div class="bubble"><span id="breatheTxt">Prêt ?</span></div>
-        <button class="home-btn" id="breathe">🦊 Respire avec le renard</button></div>`:fox("cheer")}
+      ${neg?`${fox("calm","fox calm")}<div class="breathe" id="breatheBox"><div class="bubble"><span id="breatheTxt">Prêt ?</span></div>
+        <button class="home-btn" id="breathe">🌬️ Respire avec moi</button></div>`:fox("cheer")}
       <button class="home-btn" data-go="accueil">🏠 Retour à l'accueil</button>
       <button class="later" data-go="hub">Encore une idée ? Continuer en ${esc(s.classe||"")} →</button></div></div>`;
   }
@@ -326,6 +302,7 @@ const SPEAK={emo:"Comment tu te sens ? Touche l'émotion qui te ressemble.",emo2
   ameliorer:"Qu'est-ce que tu changerais au centre ?",explorer:"Qu'est-ce que tu aimerais découvrir ?",libre:"Dis ou dessine ce que tu veux !",merci:"Bravo ! C'est bien arrivé chez les animateurs !"};
 function go(view){
   clearTimeout(timer); clearInterval(breathTimer); breathTimer=null;
+  if(view==="classe"&&s.view==="accueil") mixFlip=!mixFlip;   // nouvel enfant : on inverse fille/garçon
   if(view==="classe"||view==="accueil") s={view,classe:null,...fresh()};
   if(view==="hub") Object.assign(s,fresh());
   if(PTYPES[view]&&s.view==="hub") Object.assign(s,fresh());

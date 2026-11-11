@@ -332,3 +332,22 @@ a.btn{color:inherit;text-decoration:none;display:inline-flex;align-items:center}
 .door.emo.star .pic{width:100px;height:100px}
 .periodes>.btn{align-self:flex-start}
 @media (max-width:520px){.door.emo.star .pic{width:72px;height:72px;font-size:3.4rem}.door.emo.star{padding-top:22px}}
+
+/* ---------- mascotte (personnage du centre) ---------- */
+.mascotte{display:block;height:auto;filter:drop-shadow(0 6px 6px rgba(20,40,110,.25))}
+.hero .fox.mascotte{width:auto;height:min(270px,44vw);margin-right:-6px}
+.q .foxpeek.mascotte{width:74px;top:-96px;right:6px}
+.q.withfox{padding-right:96px}
+.merci .fox.mascotte{width:auto;height:min(300px,42vh)}
+.merci .fox.calm{height:min(170px,26vh);animation:none;margin-bottom:-30px}
+.emohead{width:100%;height:100%;border-radius:50%;display:block}
+.door.emo .pic{background:#fff;border-radius:50%;padding:3px;box-shadow:0 0 0 4px #FFE27A}
+.qhead{width:72px;height:72px;border-radius:50%;display:block;box-shadow:0 0 0 4px #E4E0FF}
+.q .qico:has(.qhead){font-size:0}
+.inthead{width:56px;height:56px;border-radius:50%;display:block}
+.inthead:not(.small){width:84px;height:84px}
+@media (max-width:560px){.q .foxpeek.mascotte{width:60px;top:-80px}.q.withfox{padding-right:76px}}
+.hero{gap:4px;align-items:flex-end}
+.hero .fox.mascotte{height:min(240px,38vw)}
+.hero .fox.right{transform:scaleX(-1)}
+@media (max-width:560px){.hero .fox.mascotte{height:min(190px,40vw)}.hero .sign{font-size:1.25rem;padding:10px 12px}}
