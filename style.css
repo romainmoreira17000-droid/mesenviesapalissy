@@ -419,3 +419,11 @@ header.top .logo h1 small{display:block;font-size:.55em;font-weight:700;opacity:
 .tag .pic.icon{width:92px;height:64px}
 .tag .pic.icon img{mix-blend-mode:normal}
 @media (max-width:520px){.tag .pic.icon{width:84px;height:58px}}
+
+/* ---------- émotions : la fille et le garçon sur chaque carte ---------- */
+.emocard .kidpic.duo{width:auto;height:auto;box-shadow:none;border-radius:0;background:none;overflow:visible;display:flex;justify-content:center}
+.emocard .kidpic.duo img{width:96px;height:96px;border-radius:50%;display:block;box-shadow:0 0 0 4px var(--ring,#fff);background:#fff}
+.emocard .kidpic.duo img+img{margin-left:-14px}
+@media (min-width:600px){.emocard .kidpic.duo img{width:112px;height:112px}}
+@media (max-width:420px){.emocard .kidpic.duo img{width:70px;height:70px}.emocard .kidpic.duo img+img{margin-left:-10px}}
+@media (max-width:599px){.emos{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.emocard{padding:12px 6px;min-height:0}.emocard .kidpic.duo img{width:62px;height:62px;box-shadow:0 0 0 3px var(--ring,#fff)}.emocard .kidpic.duo img+img{margin-left:-10px}.emocard .sub{font-size:.85rem}}

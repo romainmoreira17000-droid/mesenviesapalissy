@@ -226,7 +226,7 @@ function render(){
   if(s.view==="choix"&&$("#autreTxt")) $("#autreTxt").addEventListener("input",e=>s.autre=e.target.value);
   if(s.view==="emo"){
     app.innerHTML=`<div class="wrap kid">${nav()}${q("Comment tu te sens ?","Touche l'émotion qui te ressemble.")}
-      <div class="grid emos">${EMOS.map(([id,e,l,c,d,ring])=>`<button class="big emocard" data-emo="${id}" aria-pressed="${s.emo===id}" style="--emo:${c};--ring:${ring}"><span class="badge" aria-hidden="true">✓</span><span class="kidpic">${emoImg(id,"")}</span><span class="name">${l}</span><span class="sub">${d}</span></button>`).join("")}</div>
+      <div class="grid emos">${EMOS.map(([id,e,l,c,d,ring])=>`<button class="big emocard" data-emo="${id}" aria-pressed="${s.emo===id}" style="--emo:${c};--ring:${ring}"><span class="badge" aria-hidden="true">✓</span><span class="kidpic duo"><img src="img/emo-${id}-f.webp" alt=""><img src="img/emo-${id}-g.webp" alt=""></span><span class="name">${l}</span><span class="sub">${d}</span></button>`).join("")}</div>
       ${s.emo?`<div class="idea"><span class="lab">Un peu ou beaucoup ?</span><div class="grid inten">
         <button class="big tag" data-int="1" aria-pressed="${s.intensite===1}"><span class="badge" aria-hidden="true">✓</span><span class="pic">${emoImg(s.emo,"inthead small")}</span><span class="name">Un peu</span></button>
         <button class="big tag" data-int="2" aria-pressed="${s.intensite===2}"><span class="badge" aria-hidden="true">✓</span><span class="pic">${emoImg(s.emo,"inthead")}</span><span class="name">Beaucoup</span></button></div></div>`:""}
