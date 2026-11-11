@@ -174,9 +174,9 @@ function render(){
   if(s.view==="accueil"){
     app.innerHTML=`<div class="wrap kid">
       <div class="hero">${fox("wave","fox","f")}<div class="sign">Bonjour !<br>Qui es-tu ?<button class="speak" data-say="Bonjour ! Qui es-tu ? Enfants, ou familles ?" aria-label="Écouter">🔊</button></div>${fox("wave","fox right","g")}</div>
-      <div class="grid choose">
-        <button class="big who kids" data-go="classe"><span class="pic duoimg" aria-hidden="true"><img src="img/emo-joie-f.webp" alt=""><img src="img/emo-joie-g.webp" alt=""></span><span class="lbl">Enfants</span><span class="sub">Je donne mes envies et mes idées</span></button>
-        <a class="big who fams" href="familles.html?app"><span class="pic duoimg fam" aria-hidden="true"><img src="img/perso-coeur-f.webp" alt=""><img src="img/perso-coeur-g.webp" alt=""></span><span class="lbl">Familles</span><span class="sub">Parents : votre avis sur le centre</span></a>
+      <div class="grid tiles">
+        <button class="tile" data-go="classe" aria-label="Enfants : je donne mes envies et mes idées"><img src="img/accueil-enfants.webp" alt="" width="560" height="553"><span class="tsub">Je donne mes envies et mes idées</span></button>
+        <a class="tile" href="familles.html?app" aria-label="Familles : votre avis sur le centre"><img src="img/accueil-familles.webp" alt="" width="560" height="553"><span class="tsub">Parents : votre avis sur le centre</span></a>
       </div></div>`;
     return;
   }
