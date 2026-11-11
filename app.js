@@ -255,7 +255,7 @@ function render(){
   }
   else if(PTYPES[s.view]){
     const t=s.view, P=PTYPES[t];
-    const tagsHtml=P.tags?`<div class="grid tags">${P.tags.map(([id,e,l])=>`<button class="big tag" data-tag="${id}" aria-pressed="${s.tags.includes(id)}"><span class="badge" aria-hidden="true">✓</span><span class="pic" aria-hidden="true">${e}</span><span class="name">${l}</span></button>`).join("")}</div>`:"";
+    const tagsHtml=P.tags?`<div class="grid tags">${P.tags.map(([id,e,l])=>`<button class="big tag" data-tag="${id}" aria-pressed="${s.tags.includes(id)}"><span class="badge" aria-hidden="true">✓</span><span class="pic icon" aria-hidden="true"><img src="${id==="autre"?"img/act/autre.webp":`img/tag/${t}-${id}.webp`}" alt=""></span><span class="name">${l}</span></button>`).join("")}</div>`:"";
     const momentHtml=t==="ameliorer"?`<div class="idea"><span class="lab">C'est pendant quel moment ?</span><div class="mini">${[...MOMENTS.map(m=>[m.id,m.pic+" "+m.lbl]),["tous","🏫 Partout"]].map(([id,l])=>`<button class="chip" data-pmoment="${id}" aria-pressed="${s.pmoment===id}">${l}</button>`).join("")}</div></div>`:"";
     const drawHtml=t==="libre"?`<div class="draw"><span class="idea"><span class="lab">🖍️ Avec un dessin</span></span>
       <div class="pens">${PENS.map(c=>`<button class="pen" data-pen="${c}" style="background:${c}" aria-label="Crayon de couleur" aria-pressed="${pen===c}"></button>`).join("")}
