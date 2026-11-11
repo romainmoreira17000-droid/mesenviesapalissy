@@ -167,7 +167,7 @@ function render(){
   $("#voiceBtn").setAttribute("aria-pressed",voice);
   $("#voiceBtn").textContent=voice?"🔊 Voix":"🔇 Voix";
   $("#adultBtn").textContent=s.view.startsWith("adm")?"← Retour aux enfants":"Espace animateur";
-  $("#voiceBtn").hidden=s.view.startsWith("adm");
+  $("#voiceBtn").hidden=s.view.startsWith("adm"); if(typeof majFsBtn==="function") majFsBtn();
   if(s.view==="adm-login") return renderLogin(app);
   if(s.view==="adm"){ renderAdmin(app); const at=document.querySelector(".admtab[aria-pressed=true]"); if(at){ const nav=at.parentElement; nav.scrollLeft=Math.max(0,at.offsetLeft-nav.clientWidth/2+at.offsetWidth/2); } return; }
 
@@ -801,6 +801,7 @@ async function loadConfig(){
 document.addEventListener("click",e=>{
   const t=e.target.closest("button,[data-toggle]"); if(!t) return;
   const d=t.dataset;
+  if(t.id==="fsBtn"){ if(isFs()){ setFsWanted(false); exitFs(); } else { setFsWanted(true); enterFs(); } majFsBtn(); return; }
   if(t.id==="voiceBtn"){voice=!voice;try{localStorage.setItem("envies-voice",voice?"on":"off")}catch(_){ } if(!voice)try{speechSynthesis.cancel()}catch(_){ } render();return;}
   if(t.id==="adultBtn"){
     if(s.view.startsWith("adm")){ if(!(remember&&session)) logout(); go("accueil"); }
@@ -876,6 +877,25 @@ if(CFG.nomCentre){ const t=`Mes envies à ${CFG.nomCentre}`; $("#appTitle").text
 if(!configured){ const b=$("#setupBanner"); b.hidden=false; b.textContent="L'appli n'est pas encore reliée à Supabase : les réponses restent sur cette tablette en attendant. Remplis le fichier config.js (voir le README)."; }
 render(); showQueue();
 loadConfig(); flushQueue(); setInterval(flushQueue,60000); setInterval(loadConfig,5*60000);
+
+/* ---------------- Plein écran et écran toujours allumé ---------------- */
+/* Le plein écran ne peut s'ouvrir qu'après un toucher : si l'adulte l'a activé et qu'un enfant en sort,
+   le toucher suivant le rétablit tout seul. L'écran reste allumé tant que l'appli est affichée. */
+let fsWanted=false; try{ fsWanted=localStorage.getItem("envies-fs")==="1"; }catch(e){}
+function setFsWanted(v){ fsWanted=v; try{ v?localStorage.setItem("envies-fs","1"):localStorage.removeItem("envies-fs"); }catch(e){} }
+function isFs(){ return !!(document.fullscreenElement||document.webkitFullscreenElement); }
+function enterFs(){ const el=document.documentElement; try{ const r=(el.requestFullscreen||el.webkitRequestFullscreen)?.call(el,{navigationUI:"hide"}); r?.catch?.(()=>{}); }catch(e){} }
+function exitFs(){ try{ (document.exitFullscreen||document.webkitExitFullscreen)?.call(document)?.catch?.(()=>{}); }catch(e){} }
+function majFsBtn(){ const b=$("#fsBtn"); if(!b) return;
+  const ok=!!(document.documentElement.requestFullscreen||document.documentElement.webkitRequestFullscreen);
+  b.hidden=!ok||s.view.startsWith("adm"); b.textContent=isFs()?"✕ Quitter le plein écran":"⛶ Plein écran"; }
+document.addEventListener("fullscreenchange",majFsBtn); document.addEventListener("webkitfullscreenchange",majFsBtn);
+document.addEventListener("pointerdown",e=>{ if(fsWanted&&!isFs()&&!s.view.startsWith("adm")&&e.target.id!=="fsBtn") enterFs(); },true);
+let wakeLock=null;
+async function keepAwake(){ try{ if("wakeLock" in navigator&&document.visibilityState==="visible"&&!wakeLock){ wakeLock=await navigator.wakeLock.request("screen"); wakeLock.addEventListener("release",()=>{wakeLock=null;}); } }catch(e){ wakeLock=null; } }
+document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible") keepAwake(); });
+document.addEventListener("pointerdown",keepAwake,{passive:true});
+keepAwake(); majFsBtn();
 /* connexion gardée (« Rester connecté ») : on la reprend sans redemander le mot de passe */
 if(sb&&remember) sb.auth.getSession().then(async({data})=>{
   if(!data?.session){ setRemember(false); return; }
