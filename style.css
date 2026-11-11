@@ -393,3 +393,7 @@ a.btn{color:inherit;text-decoration:none;display:inline-flex;align-items:center}
 @media (max-width:520px){.door .pic.sticker{width:96px;height:96px;margin:-8px 0 -8px -6px}.door.emo.star .pic.sticker{width:108px;height:108px}}
 .door.emo.star .pic.sticker{width:122px;height:122px;margin:-10px 0 -2px -8px}
 @media (max-width:520px){.door.emo.star .pic.sticker{width:100px;height:100px;margin:-6px 0 0 -6px}}
+
+/* ---------- logo « Ma parole compte ! » ---------- */
+.logoimg{width:56px;height:56px;border-radius:50%;display:block;flex:none;background:#fff;box-shadow:0 0 0 3px rgba(255,255,255,.9),0 4px 0 rgba(0,0,40,.2)}
+@media (max-width:520px){.logoimg{width:48px;height:48px}}
