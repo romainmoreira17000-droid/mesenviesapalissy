@@ -385,11 +385,3 @@ a.btn{color:inherit;text-decoration:none;display:inline-flex;align-items:center}
 .tsub{font-family:var(--display);font-weight:700;font-size:clamp(1rem,3.4vw,1.25rem);color:var(--indigo);text-align:center;line-height:1.15;background:rgba(255,255,255,.85);padding:4px 12px;border-radius:999px}
 @media (prefers-reduced-motion:reduce){.tile img{transition:none}}
 .door.emo.star{padding-top:16px}
-
-/* ---------- portes : personnages à la place des icônes ---------- */
-.door .pic.perso{background:#fff;border-radius:50%;overflow:hidden;box-shadow:0 0 0 4px rgba(255,255,255,.6);font-size:0}
-.door .pic.perso img{width:100%;height:100%;object-fit:cover;display:block}
-.door .pic.grimpe img{object-position:40% 18%;transform:scale(1.35);transform-origin:40% 20%}
-.door .pic.briques img{object-position:0% 0%;transform:scale(1.25);transform-origin:20% 10%}
-.door .pic.assis img{object-position:50% 0%;transform:scale(1.15);transform-origin:50% 0}
-.door .pic.coeur img{object-position:50% 0%;transform:scale(1.9);transform-origin:50% 42%}
