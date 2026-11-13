@@ -59,7 +59,7 @@ const ANIMAUX=[["lion","🦁","Le lion","Afrique"],["girafe","🦒","La girafe",
   ["pingouin","🐧","Le manchot","Pôle Sud"],["ourspolaire","🐻‍❄️","L'ours polaire","Pôle Nord"],["dauphin","🐬","Le dauphin","Océans"],["tortue","🐢","La tortue","Océans"]];
 const COSTUMES=[["centre","✂️","Le fabriquer au centre"],["maison","🏠","L'apporter de la maison"],["maquillage","🎨","Du maquillage"],["masque","🎭","Un masque"],["sais","🤷","Je ne sais pas encore"]];
 const CHARS=[["savane","🦁","La savane africaine","Lions, girafes, éléphants, zèbres"],["jungle","🦜","La jungle tropicale","Singes, perroquets, tigres, crocodiles"],
-  ["banquise","🐧","La banquise","Manchots, ours polaires, phoques"],["ocean","🐬","Le monde sous la mer","Dauphins, tortues, poissons, baleines"],["tous","🌍","Tous les animaux du monde","Un grand défilé de tous les continents"]];
+  ["banquise","🐧","La banquise","Manchots, ours polaires, phoques"],["ocean","🐬","Le monde sous la mer","Dauphins, tortues, poissons, baleines"],["tous","🌍","Tous les animaux du monde","Un peu de tout : savane, jungle, banquise et monde sous la mer"]];
 const charById=id=>(c=>c?{e:c[1],l:c[2],x:c[3]}:{e:"•",l:id,x:""})(CHARS.find(x=>x[0]===id));
 const animalById=id=>id==="autre"?{e:"➕",l:"Autre animal",c:""}:(a=>a?{e:a[1],l:a[2],c:a[3]}:{e:"❔",l:id,c:""})(ANIMAUX.find(x=>x[0]===id));
 const costumeById=id=>(c=>c?{e:c[1],l:c[2]}:{e:"•",l:id})(COSTUMES.find(x=>x[0]===id));
@@ -101,7 +101,7 @@ function pickVoice(){ try{ const v=speechSynthesis.getVoices(); voiceCount=v.len
 if(hasTTS){ pickVoice(); try{ speechSynthesis.addEventListener("voiceschanged",pickVoice); }catch(e){} setTimeout(pickVoice,800); setTimeout(pickVoice,3000); }
 /* Phrases enregistrées à l'avance (dossier audio/) : elles marchent même sur une tablette sans voix installée. */
 let voixMap={}, curAudio=null;
-try{ fetch("audio/voix.json?v=20261113c").then(r=>r.ok?r.json():{}).then(j=>{voixMap=j||{};}).catch(()=>{}); }catch(e){}
+try{ fetch("audio/voix.json?v=20261113d").then(r=>r.ok?r.json():{}).then(j=>{voixMap=j||{};}).catch(()=>{}); }catch(e){}
 function say(t,force){
   if((!voice&&!force)||!t) return;
   const k=voixMap[t];
