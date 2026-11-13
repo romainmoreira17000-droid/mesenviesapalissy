@@ -58,7 +58,9 @@ const ANIMAUX=[["lion","🦁","Le lion","Afrique"],["girafe","🦒","La girafe",
   ["kangourou","🦘","Le kangourou","Océanie"],["koala","🐨","Le koala","Océanie"],["perroquet","🦜","Le perroquet","Amérique"],["lama","🦙","Le lama","Amérique"],
   ["pingouin","🐧","Le manchot","Pôle Sud"],["ourspolaire","🐻‍❄️","L'ours polaire","Pôle Nord"],["dauphin","🐬","Le dauphin","Océans"],["tortue","🐢","La tortue","Océans"]];
 const COSTUMES=[["centre","✂️","Le fabriquer au centre"],["maison","🏠","L'apporter de la maison"],["maquillage","🎨","Du maquillage"],["masque","🎭","Un masque"],["sais","🤷","Je ne sais pas encore"]];
-const CHAR_MAX=2;
+const CHARS=[["savane","🦁","La savane africaine","Lions, girafes, éléphants, zèbres"],["jungle","🦜","La jungle tropicale","Singes, perroquets, tigres, crocodiles"],
+  ["banquise","🐧","La banquise","Manchots, ours polaires, phoques"],["ocean","🐬","Le monde sous la mer","Dauphins, tortues, poissons, baleines"]];
+const charById=id=>(c=>c?{e:c[1],l:c[2],x:c[3]}:{e:"•",l:id,x:""})(CHARS.find(x=>x[0]===id));
 const animalById=id=>id==="autre"?{e:"➕",l:"Autre animal",c:""}:(a=>a?{e:a[1],l:a[2],c:a[3]}:{e:"❔",l:id,c:""})(ANIMAUX.find(x=>x[0]===id));
 const costumeById=id=>(c=>c?{e:c[1],l:c[2]}:{e:"•",l:id})(COSTUMES.find(x=>x[0]===id));
 const PENS=["#1F2B3A","#E53935","#FB8C00","#FDD835","#43A047","#1E88E5","#8E24AA","#8D6E63"];
@@ -99,7 +101,7 @@ function pickVoice(){ try{ const v=speechSynthesis.getVoices(); voiceCount=v.len
 if(hasTTS){ pickVoice(); try{ speechSynthesis.addEventListener("voiceschanged",pickVoice); }catch(e){} setTimeout(pickVoice,800); setTimeout(pickVoice,3000); }
 /* Phrases enregistrées à l'avance (dossier audio/) : elles marchent même sur une tablette sans voix installée. */
 let voixMap={}, curAudio=null;
-try{ fetch("audio/voix.json?v=20261113a").then(r=>r.ok?r.json():{}).then(j=>{voixMap=j||{};}).catch(()=>{}); }catch(e){}
+try{ fetch("audio/voix.json?v=20261113b").then(r=>r.ok?r.json():{}).then(j=>{voixMap=j||{};}).catch(()=>{}); }catch(e){}
 function say(t,force){
   if((!voice&&!force)||!t) return;
   const k=voixMap[t];
@@ -169,8 +171,8 @@ function fox(pose="wave",cls="fox",g){
   return `<img class="${cls} mascotte ${pose}" src="img/${src}-${g}.webp" alt="" aria-hidden="true">`;
 }
 const emoImg=(id,cls="emohead")=>`<img class="${cls}" src="img/emo-${id}-${genre(Math.max(0,EMOS.findIndex(e=>e[0]===id)))}.webp" alt="" aria-hidden="true">`;
-const STEP={carn1:2,carn2:3,carn3:4,emo:3,emo2:4,classe:1,hub:2,moment:3,ameliorer:3,explorer:3,libre:3,choix:4,humeur:4};
-const BACK={carn1:"hub",carn2:"carn1",carn3:"carn2",emo:"hub",emo2:"emo",classe:"accueil",hub:"classe",moment:"hub",choix:"moment",humeur:"choix",ameliorer:"hub",explorer:"hub",libre:"hub"};
+const STEP={carn1:3,carn2:4,emo:3,emo2:4,classe:1,hub:2,moment:3,ameliorer:3,explorer:3,libre:3,choix:4,humeur:4};
+const BACK={carn1:"hub",carn2:"carn1",emo:"hub",emo2:"emo",classe:"accueil",hub:"classe",moment:"hub",choix:"moment",humeur:"choix",ameliorer:"hub",explorer:"hub",libre:"hub"};
 function nav(){
   const n=STEP[s.view]||1;
   const dots=[1,2,3,4].map(i=>`<i class="${i<=n?"on":""}"></i>`).join("<b></b>");
@@ -258,7 +260,7 @@ function render(){
     [["causeAutre","causeAutre"],["prenom","prenom"],["emoTexte","emoTexte"]].forEach(([id,k])=>{const el=$("#"+id); if(el) el.addEventListener("input",ev=>s[k]=ev.target.value);});
     return;
   }
-  if(["carn1","carn2","carn3"].includes(s.view)){
+  if(["carn1","carn2"].includes(s.view)){
     const animCard=(id,e,l,c,sel,attr)=>`<button class="big tag animal" ${attr}="${id}" aria-pressed="${sel}"><span class="badge" aria-hidden="true">✓</span><span class="pic" aria-hidden="true">${e}</span><span class="name">${esc(l)}</span>${c?`<span class="cont">${esc(c)}</span>`:""}</button>`;
     const grid=(attr,isSel)=>`<div class="grid tags animaux">${ANIMAUX.map(([id,e,l,c])=>animCard(id,e,l,c,isSel(id),attr)).join("")}${animCard("autre","➕","Autre animal","",isSel("autre"),attr)}</div>`;
     let body="", bar="";
@@ -268,15 +270,11 @@ function render(){
       bar=`<button class="back" data-go="hub">← Retour</button><button class="go" data-go="carn2" ${s.cAnimal?"":"disabled"}>Suivant →</button>`;
     }
     if(s.view==="carn2"){
-      const a=animalById(s.cAnimal);
-      body=`${q("Comment veux-tu faire ton costume ?","Tu peux choisir plusieurs réponses.",a.e)}
-        <div class="grid tags">${COSTUMES.map(([id,e,l])=>`<button class="big tag" data-ccost="${id}" aria-pressed="${s.cCostume.includes(id)}"><span class="badge" aria-hidden="true">✓</span><span class="pic" aria-hidden="true">${e}</span><span class="name">${l}</span></button>`).join("")}</div>`;
-      bar=`<button class="back" data-go="carn1">← Retour</button><button class="go" data-go="carn3">Suivant →</button>`;
-    }
-    if(s.view==="carn3"){
-      body=`${q("Pour le char, quels animaux du monde ?",`Choisis jusqu'à ${CHAR_MAX} animaux pour décorer le char.`,"🚚")}${grid("data-cchar",id=>s.cChar.includes(id))}
-        ${s.cChar.includes("autre")?`<div class="idea"><label for="cCharAutre">➕ Quel animal ou quelle idée pour le char ?</label><small>Un grand peut l'écrire pour toi.</small><input id="cCharAutre" maxlength="120" value="${esc(s.cCharAutre)}" style="font-size:1.2rem"></div>`:""}`;
-      bar=`<button class="back" data-go="carn2">← Retour</button><span class="count">${s.cChar.length} / ${CHAR_MAX}</span><button class="go" id="sendCarn">Envoyer 🎉</button>`;
+      body=`${q("Pour le char, qu'est-ce que tu imagines ?","Choisis un monde d'animaux pour le char du carnaval.","🎉")}
+        <div class="grid chars">${CHARS.map(([id,e,l,x])=>`<button class="big tag char" data-cchar="${id}" aria-pressed="${s.cChar.includes(id)}"><span class="badge" aria-hidden="true">✓</span><span class="pic" aria-hidden="true">${e}</span><span class="name">${l}</span><span class="cont">${x}</span></button>`).join("")}</div>
+        <div class="idea"><label for="cCharAutre">✏️ Raconte ton idée pour le char <span class="muted" style="font-weight:400">(facultatif)</span></label><small>Un grand peut l'écrire pour toi.</small>
+          <textarea id="cCharAutre" maxlength="120" placeholder="Par exemple : un grand lion qui rugit" style="min-height:80px">${esc(s.cCharAutre)}</textarea></div>`;
+      bar=`<button class="back" data-go="carn1">← Retour</button><button class="go" id="sendCarn">Envoyer 🎉</button>`;
     }
     app.innerHTML=`<div class="wrap kid carnaval">${nav()}${body}<div class="bar">${bar}</div></div>`;
     [["cAnimalAutre","cAnimalAutre"],["cCharAutre","cCharAutre"]].forEach(([id,k])=>{const el=$("#"+id); if(el) el.addEventListener("input",ev=>s[k]=ev.target.value);});
@@ -343,7 +341,7 @@ function setupCanvas(){
   cv.addEventListener("pointerup",end); cv.addEventListener("pointercancel",end); cv.addEventListener("pointerleave",end);
 }
 
-const SPEAK={carn1:"Pour le carnaval, quel animal veux-tu être ? Choisis ton costume parmi les animaux du monde.",carn2:"Comment veux-tu faire ton costume ? Tu peux choisir plusieurs réponses.",carn3:"Pour le char, quels animaux du monde ? Choisis jusqu'à deux animaux pour décorer le char.",emo:"Comment tu te sens ? Touche l'émotion qui te ressemble.",emo2:"C'est à cause de quoi ? Et tu veux en parler à un animateur ?",accueil:"Bonjour ! Qui es-tu ? Enfants, ou familles ?",classe:"Tu es dans quelle classe ?",hub:"Qu'est-ce que tu veux faire ? Mes envies d'activités, mes émotions, j'améliore le centre, j'aimerais découvrir, ou je m'exprime.",
+const SPEAK={carn1:"Pour le carnaval, quel animal veux-tu être ? Choisis ton costume parmi les animaux du monde.",carn2:"Pour le char, qu'est-ce que tu imagines ? Choisis un monde d'animaux pour le char du carnaval.",emo:"Comment tu te sens ? Touche l'émotion qui te ressemble.",emo2:"C'est à cause de quoi ? Et tu veux en parler à un animateur ?",accueil:"Bonjour ! Qui es-tu ? Enfants, ou familles ?",classe:"Tu es dans quelle classe ?",hub:"Qu'est-ce que tu veux faire ? Mes envies d'activités, mes émotions, j'améliore le centre, j'aimerais découvrir, ou je m'exprime.",
   moment:"C'est pour quel moment ?",choix:"Qu'est-ce que tu as envie de faire ? Choisis jusqu'à trois activités.",humeur:"Tu aimes venir au centre ?",
   ameliorer:"Qu'est-ce que tu changerais au centre ?",explorer:"Qu'est-ce que tu aimerais découvrir ?",libre:"Dis ou dessine ce que tu veux !",merci:"Bravo ! C'est bien arrivé chez les animateurs !"};
 function go(view){
@@ -397,7 +395,7 @@ function startBreathing(){
 function sendCarnaval(){
   if(!s.cAnimal&&!s.cChar.length){ const m="Choisis au moins un animal avant d'envoyer."; toast(m); say(m); return; }
   save("carnaval",{classe:s.classe,cycle:cycleOf(s.classe),animal:s.cAnimal||"",animal_autre:s.cAnimal==="autre"?(s.cAnimalAutre||"").trim().slice(0,120):"",
-    costume:s.cCostume.slice(),char_animaux:s.cChar.slice(),char_autre:s.cChar.includes("autre")?(s.cCharAutre||"").trim().slice(0,120):""},$("#sendCarn"));
+    costume:[],char_animaux:s.cChar.slice(),char_autre:(s.cCharAutre||"").trim().slice(0,120)},$("#sendCarn"));
 }
 function sendParole(){
   const t=s.view, txt=(s.texte||"").trim();
@@ -730,8 +728,8 @@ function exportTab(){
   if(adm.tab==="carn"){
     const L=filteredCarnaval(); if(!L.length) return toast("Rien à exporter pour ces filtres.");
     const an=(id,autre)=>id==="autre"?("Autre : "+(autre||"")):(id?animalById(id).l:"");
-    return downloadCsv("carnaval",["Date","Classe","Animal pour le costume","Continent","Costume","Char : animal 1","Char : animal 2"],
-      L.map(r=>{const c=(r.char_animaux||[]).map(id=>an(id,r.char_autre));return [d(r.at),r.classe,an(r.animal,r.animal_autre),r.animal&&r.animal!=="autre"?animalById(r.animal).c:"",(r.costume||[]).map(x=>costumeById(x).l).join(", "),c[0]||"",c[1]||""];}));
+    return downloadCsv("carnaval",["Date","Classe","Animal pour le costume","Continent","Char choisi","Idée pour le char"],
+      L.map(r=>[d(r.at),r.classe,an(r.animal,r.animal_autre),r.animal&&r.animal!=="autre"?animalById(r.animal).c:"",(r.char_animaux||[]).filter(x=>CHARS.some(c=>c[0]===x)).map(x=>charById(x).l).join(", "),r.char_autre||""]));
   }
   if(adm.tab==="par"){
     const L=filteredParoles(); if(!L.length) return toast("Rien à exporter pour ces filtres.");
@@ -783,30 +781,29 @@ function renderCarnaval(){
   if(!carnReady) return `<div class="panel">${filters}<div class="empty">Le carnaval n'est pas encore activé dans la base de données.</div></div>`;
   const L=filteredCarnaval(), n=L.length;
   const count=(get)=>{const c={};L.forEach(r=>get(r).forEach(k=>{if(k)c[k]=(c[k]||0)+1;}));return Object.entries(c).sort((a,b)=>b[1]-a[1]);};
-  const anim=count(r=>[r.animal]), cost=count(r=>r.costume||[]), chr=count(r=>r.char_animaux||[]);
+  const anim=count(r=>[r.animal]), chr=count(r=>(r.char_animaux||[]).filter(x=>CHARS.some(c=>c[0]===x)));
   const nChar=L.filter(r=>(r.char_animaux||[]).length).length;
   const lab=id=>{const a=animalById(id);return {e:a.e,l:a.l,x:a.c};};
   const empty=`<div class="empty">Pas encore de réponse pour ces filtres.</div>`;
   const cont={}; L.forEach(r=>{if(r.animal&&r.animal!=="autre"){const c=animalById(r.animal).c;cont[c]=(cont[c]||0)+1;}});
   const autres=L.filter(r=>r.animal_autre||r.char_autre);
-  const top=(arr)=>arr[0]?`${animalById(arr[0][0]).e} ${esc(animalById(arr[0][0]).l)}`:"–";
-  const table=`<div class="tbl"><table><thead><tr><th>Classe</th><th>Réponses</th><th>Animal préféré (costume)</th><th>Animal préféré (char)</th></tr></thead><tbody>${CLASSES.map(c=>{const R=L.filter(r=>r.classe===c.id);if(!R.length)return "";
+  const top=(arr,f=animalById)=>arr[0]?`${f(arr[0][0]).e} ${esc(f(arr[0][0]).l)}`:"–";
+  const table=`<div class="tbl"><table><thead><tr><th>Classe</th><th>Réponses</th><th>Animal préféré (costume)</th><th>Char préféré</th></tr></thead><tbody>${CLASSES.map(c=>{const R=L.filter(r=>r.classe===c.id);if(!R.length)return "";
       const t=g=>{const o={};R.forEach(r=>g(r).forEach(k=>{if(k)o[k]=(o[k]||0)+1;}));const b=Object.entries(o).sort((a,b)=>b[1]-a[1])[0];return b?`${animalById(b[0]).e} ${esc(animalById(b[0]).l)} (${b[1]})`:"–";};
-      return `<tr><td><b>${c.id}</b></td><td>${R.length}</td><td>${t(r=>[r.animal])}</td><td>${t(r=>r.char_animaux||[])}</td></tr>`;}).join("")||`<tr><td colspan="4" class="muted">Pas encore de réponse.</td></tr>`}</tbody></table></div>`;
+      const tc=(()=>{const o={};R.forEach(r=>(r.char_animaux||[]).forEach(k=>{if(CHARS.some(c=>c[0]===k))o[k]=(o[k]||0)+1;}));const b=Object.entries(o).sort((a,b)=>b[1]-a[1])[0];return b?`${charById(b[0]).e} ${esc(charById(b[0]).l)} (${b[1]})`:"–";})();
+      return `<tr><td><b>${c.id}</b></td><td>${R.length}</td><td>${t(r=>[r.animal])}</td><td>${tc}</td></tr>`;}).join("")||`<tr><td colspan="4" class="muted">Pas encore de réponse.</td></tr>`}</tbody></table></div>`;
   const confirm=adm.confirm?`<div class="confirm"><span>Effacer définitivement les <b>${n}</b> réponses affichées ?</span><button class="btn danger" id="doDel">Oui, effacer</button><button class="btn" id="noDel">Annuler</button></div>`
     :`<div><button class="btn danger" id="askDel" ${n?"":"disabled"}>Effacer ces ${n} réponses…</button></div>`;
   return `<div class="panel"><h3>🎭 Carnaval « Les animaux du monde »</h3>${filters}
       <div class="kpis"><div class="kpi"><b>${n}</b><span>enfants ont répondu</span></div>
         <div class="kpi"><b style="font-size:1.4rem">${top(anim)}</b><span>animal n° 1 pour le costume</span></div>
-        <div class="kpi"><b style="font-size:1.4rem">${top(chr)}</b><span>animal n° 1 pour le char</span></div></div></div>
+        <div class="kpi"><b style="font-size:1.4rem">${top(chr,charById)}</b><span>char n° 1</span></div></div></div>
     <div class="cols even">
       <div class="panel"><h3>Les animaux choisis pour le costume</h3>${rankHtml(anim,n||1,lab,"#FF7AB6")||empty}</div>
-      <div class="panel"><h3>Les animaux choisis pour le char</h3><p class="muted" style="margin:0;font-size:.9rem">Jusqu'à 2 par enfant (% des enfants qui ont choisi pour le char).</p>${rankHtml(chr,nChar||1,lab,"#5EB8FF")||empty}</div></div>
-    <div class="cols even">
-      <div class="panel"><h3>Comment faire les costumes</h3>${rankHtml(cost,n||1,id=>costumeById(id),"#FFB547")||empty}</div>
-      <div class="panel"><h3>Les continents des costumes</h3>${Object.keys(cont).length?`<div class="rank">${Object.entries(cont).sort((a,b)=>b[1]-a[1]).map(([c,k])=>`<div class="srow"><span>${esc(c)}</span><div class="stack"><div style="width:${k/n*100}%;background:#8E6CFF"></div></div><span class="v">${k}</span></div>`).join("")}</div>`:empty}</div></div>
+      <div class="panel"><h3>Le char imaginé par les enfants</h3>${rankHtml(chr,nChar||1,id=>{const c=charById(id);return {e:c.e,l:c.l};},"#5EB8FF")||empty}</div></div>
+    <div class="panel"><h3>Les continents des costumes</h3>${Object.keys(cont).length?`<div class="rank">${Object.entries(cont).sort((a,b)=>b[1]-a[1]).map(([c,k])=>`<div class="srow"><span>${esc(c)}</span><div class="stack"><div style="width:${k/n*100}%;background:#8E6CFF"></div></div><span class="v">${k}</span></div>`).join("")}</div>`:empty}</div>
     <div class="panel"><h3>Par classe</h3>${table}</div>
-    <div class="panel"><h3>➕ Les autres idées des enfants</h3>${autres.length?`<div class="pcards">${autres.slice(0,150).map(r=>`<article class="pcard"><div class="meta"><b>${esc(r.classe)}</b> · ${fdate(r.at)}</div>${r.animal_autre?`<div class="txt"><b>Costume :</b> ${esc(r.animal_autre)}</div>`:""}${r.char_autre?`<div class="txt"><b>Char :</b> ${esc(r.char_autre)}</div>`:""}</article>`).join("")}</div>`:empty}</div>
+    <div class="panel"><h3>✏️ Les idées des enfants</h3>${autres.length?`<div class="pcards">${autres.slice(0,150).map(r=>`<article class="pcard"><div class="meta"><b>${esc(r.classe)}</b> · ${fdate(r.at)}</div>${r.animal_autre?`<div class="txt"><b>Costume :</b> ${esc(r.animal_autre)}</div>`:""}${r.char_autre?`<div class="txt"><b>Char :</b> ${esc(r.char_autre)}</div>`:""}</article>`).join("")}</div>`:empty}</div>
     <div class="panel"><h3>Effacer</h3><p class="muted" style="margin:0">Une fois le carnaval passé, exportez les résultats puis effacez-les.</p>${confirm}</div>`;
 }
 function renderActsAdmin(){
@@ -938,13 +935,7 @@ document.addEventListener("click",e=>{
   if(t.id==="sendEmo"){ sendEmotion(); return; }
   if(t.id==="sendCarn"){ sendCarnaval(); return; }
   if(d.canimal){ s.cAnimal=s.cAnimal===d.canimal?null:d.canimal; if(s.cAnimal) say(animalById(s.cAnimal).l); render(); if(s.cAnimal==="autre") setTimeout(()=>$("#cAnimalAutre")?.focus(),50); return; }
-  if(d.ccost){ const i=s.cCostume.indexOf(d.ccost); if(i>=0) s.cCostume.splice(i,1); else { s.cCostume.push(d.ccost); say(costumeById(d.ccost).l); } render(); return; }
-  if(d.cchar){ const i=s.cChar.indexOf(d.cchar);
-    if(i>=0) s.cChar.splice(i,1);
-    else if(s.cChar.length>=CHAR_MAX){ const m="Tu as déjà choisi deux animaux. Enlève-en un pour changer."; say(m); toast(m); return; }
-    else { s.cChar.push(d.cchar); say(animalById(d.cchar).l); }
-    render(); if(d.cchar==="autre"&&s.cChar.includes("autre")) setTimeout(()=>$("#cCharAutre")?.focus(),50); return; }
-  if(t.id==="breathe"){ startBreathing(); return; }
+  if(d.cchar){ s.cChar=s.cChar.includes(d.cchar)?[]:[d.cchar]; if(s.cChar.length) say(charById(d.cchar).l+". "+charById(d.cchar).x); render(); return; }
   if(d.pmoment){s.pmoment=s.pmoment===d.pmoment?null:d.pmoment; if(s.pmoment) say(momentLbl(s.pmoment)); render(); return;}
   if(d.pen){pen=d.pen; render(); return;}
   if(t.id==="clearDraw"){s.dessin=null; render(); return;}
