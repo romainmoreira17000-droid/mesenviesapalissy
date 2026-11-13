@@ -54,7 +54,7 @@ function actIcon(a){
 }
 /* ---------------- Carnaval « Les animaux du monde » ---------------- */
 const ANIMAUX=[["lion","🦁","Le lion","Afrique"],["girafe","🦒","La girafe","Afrique"],["elephant","🐘","L'éléphant","Afrique"],["singe","🐒","Le singe","Afrique"],["panda","🐼","Le panda","Asie"],["tigre","🐯","Le tigre","Asie"],
-  ["koala","🐨","Le koala","Océanie"],["perroquet","🦜","Le perroquet","Amérique"],["pingouin","🐧","Le manchot","Pôle Sud"],["ourspolaire","🐻‍❄️","L'ours polaire","Pôle Nord"]];
+  ["perroquet","🦜","Le perroquet","Amérique"],["ourspolaire","🐻‍❄️","L'ours polaire","Pôle Nord"]];
 const COSTUMES=[["centre","✂️","Le fabriquer au centre"],["maison","🏠","L'apporter de la maison"],["maquillage","🎨","Du maquillage"],["masque","🎭","Un masque"],["sais","🤷","Je ne sais pas encore"]];
 const CHARS=[["savane","🦁","La savane africaine","Lions, girafes, éléphants, zèbres"],["jungle","🦜","La jungle tropicale","Singes, perroquets, tigres, crocodiles"],
   ["banquise","🐧","La banquise","Manchots, ours polaires, phoques"],["ocean","🐬","Le monde sous la mer","Dauphins, tortues, poissons, baleines"],["tous","🌍","Tous les animaux du monde","Un peu de tout : savane, jungle, banquise et monde sous la mer"]];
