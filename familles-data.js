@@ -26,7 +26,7 @@ window.FAM = {
 
 /* Calendrier d'ouverture des espaces (réglé par les animateurs, onglet 📅 Calendrier). */
 window.CAL = {
-  CATS: [["env","🎯","Mes envies d'activités","Enfants"],["ameliorer","🔧","J'améliore le centre","Enfants"],["explorer","🧭","J'aimerais découvrir","Enfants"],
+  CATS: [["carnaval","🎭","Carnaval","Enfants"],["env","🎯","Mes envies d'activités","Enfants"],["ameliorer","🔧","J'améliore le centre","Enfants"],["explorer","🧭","J'aimerais découvrir","Enfants"],
     ["libre","💬","Je m'exprime","Enfants"],["fam_satisfaction","⭐","Satisfaction","Familles"],["fam_amelioration","🔧","Améliorations et idées","Familles"],["fam_libre","💬","Expression libre","Familles"]],
   today(){ const d=new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); },
   isOpen(ouv,cat){ const o=(ouv||{})[cat]; if(!o||o.mode!=="ferme"&&o.mode!=="dates") return true; if(o.mode==="ferme") return false;

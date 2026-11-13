@@ -427,3 +427,12 @@ header.top .logo h1 small{display:block;font-size:.55em;font-weight:700;opacity:
 @media (min-width:600px){.emocard .kidpic.duo img{width:112px;height:112px}}
 @media (max-width:420px){.emocard .kidpic.duo img{width:70px;height:70px}.emocard .kidpic.duo img+img{margin-left:-10px}}
 @media (max-width:599px){.emos{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.emocard{padding:12px 6px;min-height:0}.emocard .kidpic.duo img{width:62px;height:62px;box-shadow:0 0 0 3px var(--ring,#fff)}.emocard .kidpic.duo img+img{margin-left:-10px}.emocard .sub{font-size:.85rem}}
+
+/* ---------- carnaval ---------- */
+.door.carn{background:linear-gradient(120deg,#FF6FB0,#FFB547 50%,#4FC3F7);color:#fff;--c:#E8458B;text-shadow:0 2px 0 rgba(120,20,60,.25)}
+.door.carn .pic{font-size:3.6rem}
+.animaux{grid-template-columns:repeat(auto-fill,minmax(130px,1fr))}
+.tag.animal{min-height:120px}
+.tag.animal .pic{font-size:3rem;line-height:1}
+.tag .cont{font-size:.75rem;font-weight:700;color:#8E6CFF;background:#F1ECFF;border-radius:999px;padding:1px 8px}
+@media (max-width:420px){.animaux{grid-template-columns:repeat(2,minmax(0,1fr))}}

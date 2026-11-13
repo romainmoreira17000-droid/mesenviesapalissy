@@ -219,3 +219,29 @@ create policy "animateurs lisent emotions"   on public.emotions for select to au
 create policy "animateurs effacent emotions" on public.emotions for delete to authenticated using (public.is_animateur());
 create policy "animateurs traitent emotions" on public.emotions for update to authenticated using (public.is_animateur()) with check (public.is_animateur());
 create index if not exists emotions_created_at_idx on public.emotions (created_at desc);
+
+-- =====================================================================
+-- 10. Carnaval « Les animaux du monde » (enfants)
+-- =====================================================================
+create table if not exists public.carnaval (
+  id            uuid primary key default gen_random_uuid(),
+  created_at    timestamptz not null default now(),
+  classe        text not null check (classe in ('PS','MS','GS','CP','CE1','CE2','CM1','CM2')),
+  cycle         text not null check (cycle in ('mat','elem')),
+  animal        text not null default '' check (char_length(animal) <= 30),
+  animal_autre  text not null default '' check (char_length(animal_autre) <= 120),
+  costume       text[] not null default '{}' check (cardinality(costume) <= 6),
+  char_animaux  text[] not null default '{}' check (cardinality(char_animaux) <= 3),
+  char_autre    text not null default '' check (char_length(char_autre) <= 120)
+);
+alter table public.carnaval enable row level security;
+revoke all on public.carnaval from anon, authenticated;
+grant insert on public.carnaval to anon, authenticated;
+grant select, delete on public.carnaval to authenticated;
+drop policy if exists "enfants envoient carnaval"    on public.carnaval;
+drop policy if exists "animateurs lisent carnaval"   on public.carnaval;
+drop policy if exists "animateurs effacent carnaval" on public.carnaval;
+create policy "enfants envoient carnaval"    on public.carnaval for insert to anon, authenticated with check (true);
+create policy "animateurs lisent carnaval"   on public.carnaval for select to authenticated using (public.is_animateur());
+create policy "animateurs effacent carnaval" on public.carnaval for delete to authenticated using (public.is_animateur());
+create index if not exists carnaval_created_at_idx on public.carnaval (created_at desc);

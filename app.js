@@ -52,6 +52,15 @@ function actIcon(a){
   const [m,k]=a.id.split(":"); const f=k==="autre"?"autre":(ACT_IMG[m]||{})[k];
   return f?`<span class="pic icon" aria-hidden="true"><img src="img/act/${f}.webp" alt=""></span>`:`<span class="pic" aria-hidden="true">${esc(a.e)}</span>`;
 }
+/* ---------------- Carnaval « Les animaux du monde » ---------------- */
+const ANIMAUX=[["lion","🦁","Le lion","Afrique"],["girafe","🦒","La girafe","Afrique"],["elephant","🐘","L'éléphant","Afrique"],["zebre","🦓","Le zèbre","Afrique"],
+  ["singe","🐒","Le singe","Afrique"],["crocodile","🐊","Le crocodile","Afrique"],["panda","🐼","Le panda","Asie"],["tigre","🐯","Le tigre","Asie"],
+  ["kangourou","🦘","Le kangourou","Océanie"],["koala","🐨","Le koala","Océanie"],["perroquet","🦜","Le perroquet","Amérique"],["lama","🦙","Le lama","Amérique"],
+  ["pingouin","🐧","Le manchot","Pôle Sud"],["ourspolaire","🐻‍❄️","L'ours polaire","Pôle Nord"],["dauphin","🐬","Le dauphin","Océans"],["tortue","🐢","La tortue","Océans"]];
+const COSTUMES=[["centre","✂️","Le fabriquer au centre"],["maison","🏠","L'apporter de la maison"],["maquillage","🎨","Du maquillage"],["masque","🎭","Un masque"],["sais","🤷","Je ne sais pas encore"]];
+const CHAR_MAX=2;
+const animalById=id=>id==="autre"?{e:"➕",l:"Autre animal",c:""}:(a=>a?{e:a[1],l:a[2],c:a[3]}:{e:"❔",l:id,c:""})(ANIMAUX.find(x=>x[0]===id));
+const costumeById=id=>(c=>c?{e:c[1],l:c[2]}:{e:"•",l:id})(COSTUMES.find(x=>x[0]===id));
 const PENS=["#1F2B3A","#E53935","#FB8C00","#FDD835","#43A047","#1E88E5","#8E24AA","#8D6E63"];
 
 /* ---------------- Connexion Supabase ---------------- */
@@ -70,9 +79,9 @@ const sb=configured?window.supabase.createClient(CFG.supabaseUrl,CFG.supabaseKey
 
 /* ---------------- État ---------------- */
 let voice=true, pen=PENS[0], session=null;
-let votes=[], paroles=[], familles=[], emotions=[], emoReady=true, breathTimer=null, loadState="idle", lastLoad=0, refreshTimer=null;
+let carnaval=[], carnReady=true, votes=[], paroles=[], familles=[], emotions=[], emoReady=true, breathTimer=null, loadState="idle", lastLoad=0, refreshTimer=null;
 let config={added:{peri:[],mer:[],midi:[]},hidden:[]};
-const fresh=()=>({emo:null,intensite:null,causes:[],causeAutre:"",parler:null,prenom:"",emoTexte:"",autre:"",choix:[],humeur:null,moment:null,tags:[],texte:"",dessin:null,pmoment:null});
+const fresh=()=>({cAnimal:null,cAnimalAutre:"",cCostume:[],cChar:[],cCharAutre:"",emo:null,intensite:null,causes:[],causeAutre:"",parler:null,prenom:"",emoTexte:"",autre:"",choix:[],humeur:null,moment:null,tags:[],texte:"",dessin:null,pmoment:null});
 let s={view:"accueil",classe:null,...fresh()};
 let acc={mode:"login",msg:"",pending:[],team:[],ntfy:null};
 let adm={tab:"res",fm:"all",fc:"all",fp:"all",pt:"all",ft:"all",confirm:false,delp:null,err:"",busy:false};
@@ -90,7 +99,7 @@ function pickVoice(){ try{ const v=speechSynthesis.getVoices(); voiceCount=v.len
 if(hasTTS){ pickVoice(); try{ speechSynthesis.addEventListener("voiceschanged",pickVoice); }catch(e){} setTimeout(pickVoice,800); setTimeout(pickVoice,3000); }
 /* Phrases enregistrées à l'avance (dossier audio/) : elles marchent même sur une tablette sans voix installée. */
 let voixMap={}, curAudio=null;
-try{ fetch("audio/voix.json?v=20261110i").then(r=>r.ok?r.json():{}).then(j=>{voixMap=j||{};}).catch(()=>{}); }catch(e){}
+try{ fetch("audio/voix.json?v=20261113a").then(r=>r.ok?r.json():{}).then(j=>{voixMap=j||{};}).catch(()=>{}); }catch(e){}
 function say(t,force){
   if((!voice&&!force)||!t) return;
   const k=voixMap[t];
@@ -160,8 +169,8 @@ function fox(pose="wave",cls="fox",g){
   return `<img class="${cls} mascotte ${pose}" src="img/${src}-${g}.webp" alt="" aria-hidden="true">`;
 }
 const emoImg=(id,cls="emohead")=>`<img class="${cls}" src="img/emo-${id}-${genre(Math.max(0,EMOS.findIndex(e=>e[0]===id)))}.webp" alt="" aria-hidden="true">`;
-const STEP={emo:3,emo2:4,classe:1,hub:2,moment:3,ameliorer:3,explorer:3,libre:3,choix:4,humeur:4};
-const BACK={emo:"hub",emo2:"emo",classe:"accueil",hub:"classe",moment:"hub",choix:"moment",humeur:"choix",ameliorer:"hub",explorer:"hub",libre:"hub"};
+const STEP={carn1:2,carn2:3,carn3:4,emo:3,emo2:4,classe:1,hub:2,moment:3,ameliorer:3,explorer:3,libre:3,choix:4,humeur:4};
+const BACK={carn1:"hub",carn2:"carn1",carn3:"carn2",emo:"hub",emo2:"emo",classe:"accueil",hub:"classe",moment:"hub",choix:"moment",humeur:"choix",ameliorer:"hub",explorer:"hub",libre:"hub"};
 function nav(){
   const n=STEP[s.view]||1;
   const dots=[1,2,3,4].map(i=>`<i class="${i<=n?"on":""}"></i>`).join("<b></b>");
@@ -203,6 +212,7 @@ function render(){
     app.innerHTML=`<div class="wrap kid">${nav()}${q("Qu'est-ce que tu veux faire ?","",null,true)}
       <div class="grid hub">
         <button class="big door emo star" data-go="emo"><span class="pic sticker"><img src="img/porte-emotions-${genre(0)}.webp" alt=""></span><span class="lbl">Mes émotions</span><span class="sub">Comment je me sens aujourd'hui</span></button>
+        ${CAL.isOpen(config.ouvertures,"carnaval")?`<button class="big door carn" data-go="carn1"><span class="pic" aria-hidden="true">🎭</span><span class="lbl">Le carnaval</span><span class="sub">Les animaux du monde : mon costume et le char</span></button>`:""}
         ${CAL.isOpen(config.ouvertures,"env")?door("env","moment","🎯","Mes envies d'activités","Choisir ce que j'ai envie de faire"):""}
         ${Object.entries(PTYPES).filter(([k])=>CAL.isOpen(config.ouvertures,k)).map(([k,p])=>door(p.cls,k,p.pic,p.lbl,p.sub)).join("")}
       </div></div>`;
@@ -246,6 +256,30 @@ function render(){
         <textarea id="emoTexte" maxlength="300" style="min-height:80px">${esc(s.emoTexte)}</textarea></div>
       <div class="bar"><button class="back" data-go="emo">← Retour</button><button class="go" id="sendEmo">Envoyer 💌</button></div></div>`;
     [["causeAutre","causeAutre"],["prenom","prenom"],["emoTexte","emoTexte"]].forEach(([id,k])=>{const el=$("#"+id); if(el) el.addEventListener("input",ev=>s[k]=ev.target.value);});
+    return;
+  }
+  if(["carn1","carn2","carn3"].includes(s.view)){
+    const animCard=(id,e,l,c,sel,attr)=>`<button class="big tag animal" ${attr}="${id}" aria-pressed="${sel}"><span class="badge" aria-hidden="true">✓</span><span class="pic" aria-hidden="true">${e}</span><span class="name">${esc(l)}</span>${c?`<span class="cont">${esc(c)}</span>`:""}</button>`;
+    const grid=(attr,isSel)=>`<div class="grid tags animaux">${ANIMAUX.map(([id,e,l,c])=>animCard(id,e,l,c,isSel(id),attr)).join("")}${animCard("autre","➕","Autre animal","",isSel("autre"),attr)}</div>`;
+    let body="", bar="";
+    if(s.view==="carn1"){
+      body=`${q("Pour le carnaval, quel animal veux-tu être ?","Choisis ton costume parmi les animaux du monde.","🎭")}${grid("data-canimal",id=>s.cAnimal===id)}
+        ${s.cAnimal==="autre"?`<div class="idea"><label for="cAnimalAutre">➕ Quel animal ?</label><small>Un grand peut l'écrire pour toi.</small><input id="cAnimalAutre" maxlength="120" value="${esc(s.cAnimalAutre)}" style="font-size:1.2rem"></div>`:""}`;
+      bar=`<button class="back" data-go="hub">← Retour</button><button class="go" data-go="carn2" ${s.cAnimal?"":"disabled"}>Suivant →</button>`;
+    }
+    if(s.view==="carn2"){
+      const a=animalById(s.cAnimal);
+      body=`${q("Comment veux-tu faire ton costume ?","Tu peux choisir plusieurs réponses.",a.e)}
+        <div class="grid tags">${COSTUMES.map(([id,e,l])=>`<button class="big tag" data-ccost="${id}" aria-pressed="${s.cCostume.includes(id)}"><span class="badge" aria-hidden="true">✓</span><span class="pic" aria-hidden="true">${e}</span><span class="name">${l}</span></button>`).join("")}</div>`;
+      bar=`<button class="back" data-go="carn1">← Retour</button><button class="go" data-go="carn3">Suivant →</button>`;
+    }
+    if(s.view==="carn3"){
+      body=`${q("Pour le char, quels animaux du monde ?",`Choisis jusqu'à ${CHAR_MAX} animaux pour décorer le char.`,"🚚")}${grid("data-cchar",id=>s.cChar.includes(id))}
+        ${s.cChar.includes("autre")?`<div class="idea"><label for="cCharAutre">➕ Quel animal ou quelle idée pour le char ?</label><small>Un grand peut l'écrire pour toi.</small><input id="cCharAutre" maxlength="120" value="${esc(s.cCharAutre)}" style="font-size:1.2rem"></div>`:""}`;
+      bar=`<button class="back" data-go="carn2">← Retour</button><span class="count">${s.cChar.length} / ${CHAR_MAX}</span><button class="go" id="sendCarn">Envoyer 🎉</button>`;
+    }
+    app.innerHTML=`<div class="wrap kid carnaval">${nav()}${body}<div class="bar">${bar}</div></div>`;
+    [["cAnimalAutre","cAnimalAutre"],["cCharAutre","cCharAutre"]].forEach(([id,k])=>{const el=$("#"+id); if(el) el.addEventListener("input",ev=>s[k]=ev.target.value);});
     return;
   }
   if(s.view==="humeur"){
@@ -309,7 +343,7 @@ function setupCanvas(){
   cv.addEventListener("pointerup",end); cv.addEventListener("pointercancel",end); cv.addEventListener("pointerleave",end);
 }
 
-const SPEAK={emo:"Comment tu te sens ? Touche l'émotion qui te ressemble.",emo2:"C'est à cause de quoi ? Et tu veux en parler à un animateur ?",accueil:"Bonjour ! Qui es-tu ? Enfants, ou familles ?",classe:"Tu es dans quelle classe ?",hub:"Qu'est-ce que tu veux faire ? Mes envies d'activités, mes émotions, j'améliore le centre, j'aimerais découvrir, ou je m'exprime.",
+const SPEAK={carn1:"Pour le carnaval, quel animal veux-tu être ? Choisis ton costume parmi les animaux du monde.",carn2:"Comment veux-tu faire ton costume ? Tu peux choisir plusieurs réponses.",carn3:"Pour le char, quels animaux du monde ? Choisis jusqu'à deux animaux pour décorer le char.",emo:"Comment tu te sens ? Touche l'émotion qui te ressemble.",emo2:"C'est à cause de quoi ? Et tu veux en parler à un animateur ?",accueil:"Bonjour ! Qui es-tu ? Enfants, ou familles ?",classe:"Tu es dans quelle classe ?",hub:"Qu'est-ce que tu veux faire ? Mes envies d'activités, mes émotions, j'améliore le centre, j'aimerais découvrir, ou je m'exprime.",
   moment:"C'est pour quel moment ?",choix:"Qu'est-ce que tu as envie de faire ? Choisis jusqu'à trois activités.",humeur:"Tu aimes venir au centre ?",
   ameliorer:"Qu'est-ce que tu changerais au centre ?",explorer:"Qu'est-ce que tu aimerais découvrir ?",libre:"Dis ou dessine ce que tu veux !",merci:"Bravo ! C'est bien arrivé chez les animateurs !"};
 function go(view){
@@ -359,6 +393,11 @@ function startBreathing(){
     txt.textContent=n>=10?"Bravo !":inhale?"Inspire…":"Souffle…"; say(n>=10?"Bravo, tu as bien respiré.":inhale?"Inspire":"Souffle");
     if(n>=10){clearInterval(breathTimer);box.classList.remove("in","out");} n++; };
   step(); breathTimer=setInterval(step,4000);
+}
+function sendCarnaval(){
+  if(!s.cAnimal&&!s.cChar.length){ const m="Choisis au moins un animal avant d'envoyer."; toast(m); say(m); return; }
+  save("carnaval",{classe:s.classe,cycle:cycleOf(s.classe),animal:s.cAnimal||"",animal_autre:s.cAnimal==="autre"?(s.cAnimalAutre||"").trim().slice(0,120):"",
+    costume:s.cCostume.slice(),char_animaux:s.cChar.slice(),char_autre:s.cChar.includes("autre")?(s.cCharAutre||"").trim().slice(0,120):""},$("#sendCarn"));
 }
 function sendParole(){
   const t=s.view, txt=(s.texte||"").trim();
@@ -411,7 +450,7 @@ async function loadTeam(){
   acc.pending=p.data||[]; acc.team=t.data||[]; acc.ntfy=n.error?null:(n.data||null);
   if(s.view==="adm"&&adm.tab==="set") render();
 }
-async function logout(){ try{await sb?.auth.signOut();}catch(e){} setRemember(false); session=null; votes=[]; paroles=[]; familles=[]; emotions=[]; acc.pending=[]; acc.team=[]; loadState="idle"; stopRefresh(); }
+async function logout(){ try{await sb?.auth.signOut();}catch(e){} setRemember(false); session=null; votes=[]; paroles=[]; familles=[]; emotions=[]; carnaval=[]; acc.pending=[]; acc.team=[]; loadState="idle"; stopRefresh(); }
 
 /* ---------------- Lecture des réponses ---------------- */
 async function fetchAll(table){
@@ -430,6 +469,7 @@ async function loadAll(){
   try{
     [votes,paroles,familles,emotions]=await Promise.all([fetchAll("envies"),fetchAll("paroles"),fetchAll("familles"),
       fetchAll("emotions").then(r=>{emoReady=true;return r;},e=>{console.warn(e);emoReady=false;return [];})]);
+    carnaval=await fetchAll("carnaval").then(r=>{carnReady=true;return r;},e=>{console.warn(e);carnReady=false;return [];});
     loadState="ok"; lastLoad=Date.now();
   }catch(e){ console.error(e); loadState="err"; }
   if(s.view==="adm") render();
@@ -492,7 +532,7 @@ function renderAdmin(app){
   const upd=lastLoad?new Date(lastLoad).toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"}):"–";
   const nTodo=Math.max(todoCount,emotions.filter(e=>e.parler&&!e.traite).length);
   const nEmo=emotions.filter(e=>e.parler&&!e.traite).length;
-  const T=[["res","📊","Envies"],["emo","😊","Émotions"],["par","💬","Paroles"],["fam","👨‍👩‍👧","Familles"],["cal","📅","Calendrier"],["acts","🧩","Activités"],["set","⚙️","Aide"]];
+  const T=[...(CAL.isOpen(config.ouvertures,"carnaval")||carnaval.length?[["carn","🎭","Carnaval"]]:[]),["res","📊","Envies"],["emo","😊","Émotions"],["par","💬","Paroles"],["fam","👨‍👩‍👧","Familles"],["cal","📅","Calendrier"],["acts","🧩","Activités"],["set","⚙️","Aide"]];
   const tabs=`<button class="todo-banner" id="todoBanner" data-tab="emo" ${nTodo?"":"hidden"}>🙋 <b>${nTodo}</b> enfant(s) veulent parler à un animateur · Voir →</button>
     <div class="admbar"><nav class="admtabs" aria-label="Onglets de l'espace animateur">${T.map(([id,ic,lb])=>`<button class="admtab" data-tab="${id}" aria-pressed="${adm.tab===id}"><span aria-hidden="true">${ic}</span>${lb}${id==="emo"&&nEmo?`<b class="badge-n">${nEmo}</b>`:""}</button>`).join("")}</nav>
     <div class="admtools"><span class="upd" title="Dernière mise à jour">${upd}</span><button class="iconbtn" id="refresh" title="Actualiser" aria-label="Actualiser">↻</button><button class="iconbtn" id="logout" title="Se déconnecter" aria-label="Se déconnecter">⏻</button></div></div>`;
@@ -502,6 +542,7 @@ function renderAdmin(app){
   if(adm.tab==="par") return app.innerHTML=`<div class="wrap">${tabs}${renderParoles()}</div>`;
   if(adm.tab==="fam") return app.innerHTML=`<div class="wrap">${tabs}${renderFamilles()}</div>`;
   if(adm.tab==="emo") return app.innerHTML=`<div class="wrap">${tabs}${renderEmotions()}</div>`;
+  if(adm.tab==="carn") return app.innerHTML=`<div class="wrap">${tabs}${renderCarnaval()}</div>`;
 
   const filters=`<div class="filters"><label>Moment ${sel("fm",adm.fm,[["all","Tous les moments"],...MOMENTS.map(m=>[m.id,m.lbl])])}</label>${fClasse()}${fPeriode()}<button class="btn" id="exportCsv">⬇️ Exporter (Excel)</button></div>`;
   if(loadState!=="ok") return app.innerHTML=`<div class="wrap">${tabs}<div class="panel">${filters}<div class="empty">${stateMsg()}</div></div></div>`;
@@ -686,6 +727,12 @@ function exportTab(){
     return downloadCsv("envies",["Date","Classe","Moment","Activité 1","Activité 2","Activité 3","Autre activité","Aime venir"],
       L.map(v=>{const a=(v.activites||[]).map(id=>actById(id).l);return [d(v.at),v.classe,momentLbl(v.moment),a[0]||"",a[1]||"",a[2]||"",v.autre||"",(MOODS.find(m=>m.id===v.humeur)||{}).lbl||""];}));
   }
+  if(adm.tab==="carn"){
+    const L=filteredCarnaval(); if(!L.length) return toast("Rien à exporter pour ces filtres.");
+    const an=(id,autre)=>id==="autre"?("Autre : "+(autre||"")):(id?animalById(id).l:"");
+    return downloadCsv("carnaval",["Date","Classe","Animal pour le costume","Continent","Costume","Char : animal 1","Char : animal 2"],
+      L.map(r=>{const c=(r.char_animaux||[]).map(id=>an(id,r.char_autre));return [d(r.at),r.classe,an(r.animal,r.animal_autre),r.animal&&r.animal!=="autre"?animalById(r.animal).c:"",(r.costume||[]).map(x=>costumeById(x).l).join(", "),c[0]||"",c[1]||""];}));
+  }
   if(adm.tab==="par"){
     const L=filteredParoles(); if(!L.length) return toast("Rien à exporter pour ces filtres.");
     return downloadCsv("paroles-enfants",["Date","Espace","Classe","Moment","Thèmes","Texte","Dessin"],
@@ -728,6 +775,39 @@ function renderCalendrier(){
       <h3 style="margin-top:6px">🧒 Enfants</h3>${grp("Enfants")}
       <h3 style="margin-top:6px">👨‍👩‍👧 Familles</h3>${grp("Familles")}
       <div class="tabs"><button class="btn primary" id="calSave" ${dirty?"":"disabled"}>Enregistrer le calendrier</button>${dirty?`<button class="btn" id="calReset">Annuler les changements</button><span class="muted" style="align-self:center">Modifications non enregistrées</span>`:""}</div></div>`;
+}
+function filteredCarnaval(){const st=periodStart();return carnaval.filter(r=>byClasse(r)&&(r.at||0)>=st);}
+function renderCarnaval(){
+  const filters=`<div class="filters">${fClasse()}${fPeriode()}<button class="btn" id="exportCsv">⬇️ Exporter (Excel)</button></div>`;
+  if(loadState!=="ok") return `<div class="panel">${filters}<div class="empty">${stateMsg()}</div></div>`;
+  if(!carnReady) return `<div class="panel">${filters}<div class="empty">Le carnaval n'est pas encore activé dans la base de données.</div></div>`;
+  const L=filteredCarnaval(), n=L.length;
+  const count=(get)=>{const c={};L.forEach(r=>get(r).forEach(k=>{if(k)c[k]=(c[k]||0)+1;}));return Object.entries(c).sort((a,b)=>b[1]-a[1]);};
+  const anim=count(r=>[r.animal]), cost=count(r=>r.costume||[]), chr=count(r=>r.char_animaux||[]);
+  const nChar=L.filter(r=>(r.char_animaux||[]).length).length;
+  const lab=id=>{const a=animalById(id);return {e:a.e,l:a.l,x:a.c};};
+  const empty=`<div class="empty">Pas encore de réponse pour ces filtres.</div>`;
+  const cont={}; L.forEach(r=>{if(r.animal&&r.animal!=="autre"){const c=animalById(r.animal).c;cont[c]=(cont[c]||0)+1;}});
+  const autres=L.filter(r=>r.animal_autre||r.char_autre);
+  const top=(arr)=>arr[0]?`${animalById(arr[0][0]).e} ${esc(animalById(arr[0][0]).l)}`:"–";
+  const table=`<div class="tbl"><table><thead><tr><th>Classe</th><th>Réponses</th><th>Animal préféré (costume)</th><th>Animal préféré (char)</th></tr></thead><tbody>${CLASSES.map(c=>{const R=L.filter(r=>r.classe===c.id);if(!R.length)return "";
+      const t=g=>{const o={};R.forEach(r=>g(r).forEach(k=>{if(k)o[k]=(o[k]||0)+1;}));const b=Object.entries(o).sort((a,b)=>b[1]-a[1])[0];return b?`${animalById(b[0]).e} ${esc(animalById(b[0]).l)} (${b[1]})`:"–";};
+      return `<tr><td><b>${c.id}</b></td><td>${R.length}</td><td>${t(r=>[r.animal])}</td><td>${t(r=>r.char_animaux||[])}</td></tr>`;}).join("")||`<tr><td colspan="4" class="muted">Pas encore de réponse.</td></tr>`}</tbody></table></div>`;
+  const confirm=adm.confirm?`<div class="confirm"><span>Effacer définitivement les <b>${n}</b> réponses affichées ?</span><button class="btn danger" id="doDel">Oui, effacer</button><button class="btn" id="noDel">Annuler</button></div>`
+    :`<div><button class="btn danger" id="askDel" ${n?"":"disabled"}>Effacer ces ${n} réponses…</button></div>`;
+  return `<div class="panel"><h3>🎭 Carnaval « Les animaux du monde »</h3>${filters}
+      <div class="kpis"><div class="kpi"><b>${n}</b><span>enfants ont répondu</span></div>
+        <div class="kpi"><b style="font-size:1.4rem">${top(anim)}</b><span>animal n° 1 pour le costume</span></div>
+        <div class="kpi"><b style="font-size:1.4rem">${top(chr)}</b><span>animal n° 1 pour le char</span></div></div></div>
+    <div class="cols even">
+      <div class="panel"><h3>Les animaux choisis pour le costume</h3>${rankHtml(anim,n||1,lab,"#FF7AB6")||empty}</div>
+      <div class="panel"><h3>Les animaux choisis pour le char</h3><p class="muted" style="margin:0;font-size:.9rem">Jusqu'à 2 par enfant (% des enfants qui ont choisi pour le char).</p>${rankHtml(chr,nChar||1,lab,"#5EB8FF")||empty}</div></div>
+    <div class="cols even">
+      <div class="panel"><h3>Comment faire les costumes</h3>${rankHtml(cost,n||1,id=>costumeById(id),"#FFB547")||empty}</div>
+      <div class="panel"><h3>Les continents des costumes</h3>${Object.keys(cont).length?`<div class="rank">${Object.entries(cont).sort((a,b)=>b[1]-a[1]).map(([c,k])=>`<div class="srow"><span>${esc(c)}</span><div class="stack"><div style="width:${k/n*100}%;background:#8E6CFF"></div></div><span class="v">${k}</span></div>`).join("")}</div>`:empty}</div></div>
+    <div class="panel"><h3>Par classe</h3>${table}</div>
+    <div class="panel"><h3>➕ Les autres idées des enfants</h3>${autres.length?`<div class="pcards">${autres.slice(0,150).map(r=>`<article class="pcard"><div class="meta"><b>${esc(r.classe)}</b> · ${fdate(r.at)}</div>${r.animal_autre?`<div class="txt"><b>Costume :</b> ${esc(r.animal_autre)}</div>`:""}${r.char_autre?`<div class="txt"><b>Char :</b> ${esc(r.char_autre)}</div>`:""}</article>`).join("")}</div>`:empty}</div>
+    <div class="panel"><h3>Effacer</h3><p class="muted" style="margin:0">Une fois le carnaval passé, exportez les résultats puis effacez-les.</p>${confirm}</div>`;
 }
 function renderActsAdmin(){
   return MOMENTS.map(m=>`<div class="panel"><h3>${m.pic} ${m.lbl}</h3>
@@ -796,8 +876,8 @@ async function deleteIds(table,ids){
   return ok;
 }
 async function deleteFiltered(){
-  const table=adm.tab==="par"?"paroles":adm.tab==="fam"?"familles":adm.tab==="emo"?"emotions":"envies";
-  const list=table==="paroles"?filteredParoles():table==="familles"?filteredFamilles():table==="emotions"?filteredEmotions():filteredVotes(); adm.confirm=false;
+  const table=adm.tab==="par"?"paroles":adm.tab==="fam"?"familles":adm.tab==="emo"?"emotions":adm.tab==="carn"?"carnaval":"envies";
+  const list=table==="paroles"?filteredParoles():table==="familles"?filteredFamilles():table==="emotions"?filteredEmotions():table==="carnaval"?filteredCarnaval():filteredVotes(); adm.confirm=false;
   toast("Effacement en cours…"); render();
   const ok=await deleteIds(table,list.map(v=>v.id));
   toast(ok+" effacées."); loadAll();
@@ -856,6 +936,14 @@ document.addEventListener("click",e=>{
   if(d.cause){ const i=s.causes.indexOf(d.cause); if(i>=0) s.causes.splice(i,1); else { s.causes.push(d.cause); say((CAUSES.find(c=>c[0]===d.cause)||[])[2]||""); } render(); return; }
   if(d.parler){ const v=d.parler==="oui"; s.parler=s.parler===v?null:v; if(s.parler!==null) say(v?"Oui. Écris ton prénom, ou demande à un grand.":"Non, ça va."); render(); if(s.parler===true) setTimeout(()=>$("#prenom")?.focus({preventScroll:false}),50); return; }
   if(t.id==="sendEmo"){ sendEmotion(); return; }
+  if(t.id==="sendCarn"){ sendCarnaval(); return; }
+  if(d.canimal){ s.cAnimal=s.cAnimal===d.canimal?null:d.canimal; if(s.cAnimal) say(animalById(s.cAnimal).l); render(); if(s.cAnimal==="autre") setTimeout(()=>$("#cAnimalAutre")?.focus(),50); return; }
+  if(d.ccost){ const i=s.cCostume.indexOf(d.ccost); if(i>=0) s.cCostume.splice(i,1); else { s.cCostume.push(d.ccost); say(costumeById(d.ccost).l); } render(); return; }
+  if(d.cchar){ const i=s.cChar.indexOf(d.cchar);
+    if(i>=0) s.cChar.splice(i,1);
+    else if(s.cChar.length>=CHAR_MAX){ const m="Tu as déjà choisi deux animaux. Enlève-en un pour changer."; say(m); toast(m); return; }
+    else { s.cChar.push(d.cchar); say(animalById(d.cchar).l); }
+    render(); if(d.cchar==="autre"&&s.cChar.includes("autre")) setTimeout(()=>$("#cCharAutre")?.focus(),50); return; }
   if(t.id==="breathe"){ startBreathing(); return; }
   if(d.pmoment){s.pmoment=s.pmoment===d.pmoment?null:d.pmoment; if(s.pmoment) say(momentLbl(s.pmoment)); render(); return;}
   if(d.pen){pen=d.pen; render(); return;}
