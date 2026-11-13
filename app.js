@@ -59,7 +59,7 @@ const COSTUMES=[["centre","✂️","Le fabriquer au centre"],["maison","🏠","L
 const CHARS=[["savane","🦁","La savane africaine","Lions, girafes, éléphants, zèbres"],["jungle","🦜","La jungle tropicale","Singes, perroquets, tigres, crocodiles"],
   ["banquise","🐧","La banquise","Manchots, ours polaires, phoques"],["ocean","🐬","Le monde sous la mer","Dauphins, tortues, poissons, baleines"],["tous","🌍","Tous les animaux du monde","Un peu de tout : savane, jungle, banquise et monde sous la mer"]];
 const charById=id=>(c=>c?{e:c[1],l:c[2],x:c[3]}:{e:"•",l:id,x:""})(CHARS.find(x=>x[0]===id));
-const animalById=id=>id==="autre"?{e:"➕",l:"Autre animal",c:""}:(a=>a?{e:a[1],l:a[2],c:a[3]}:{e:"❔",l:id,c:""})(ANIMAUX.find(x=>x[0]===id));
+const animalById=id=>id==="autre"?{e:"➕",l:"Autre animal ou idée",c:""}:(a=>a?{e:a[1],l:a[2],c:a[3]}:{e:"❔",l:id,c:""})(ANIMAUX.find(x=>x[0]===id));
 const costumeById=id=>(c=>c?{e:c[1],l:c[2]}:{e:"•",l:id})(COSTUMES.find(x=>x[0]===id));
 const PENS=["#1F2B3A","#E53935","#FB8C00","#FDD835","#43A047","#1E88E5","#8E24AA","#8D6E63"];
 
@@ -99,7 +99,7 @@ function pickVoice(){ try{ const v=speechSynthesis.getVoices(); voiceCount=v.len
 if(hasTTS){ pickVoice(); try{ speechSynthesis.addEventListener("voiceschanged",pickVoice); }catch(e){} setTimeout(pickVoice,800); setTimeout(pickVoice,3000); }
 /* Phrases enregistrées à l'avance (dossier audio/) : elles marchent même sur une tablette sans voix installée. */
 let voixMap={}, curAudio=null;
-try{ fetch("audio/voix.json?v=20261113d").then(r=>r.ok?r.json():{}).then(j=>{voixMap=j||{};}).catch(()=>{}); }catch(e){}
+try{ fetch("audio/voix.json?v=20261113g").then(r=>r.ok?r.json():{}).then(j=>{voixMap=j||{};}).catch(()=>{}); }catch(e){}
 function say(t,force){
   if((!voice&&!force)||!t) return;
   const k=voixMap[t];
@@ -260,11 +260,11 @@ function render(){
   }
   if(["carn1","carn2"].includes(s.view)){
     const animCard=(id,e,l,c,sel,attr)=>`<button class="big tag animal" ${attr}="${id}" aria-pressed="${sel}"><span class="badge" aria-hidden="true">✓</span><span class="pic" aria-hidden="true">${e}</span><span class="name">${esc(l)}</span>${c?`<span class="cont">${esc(c)}</span>`:""}</button>`;
-    const grid=(attr,isSel)=>`<div class="grid tags animaux">${ANIMAUX.map(([id,e,l,c])=>animCard(id,e,l,c,isSel(id),attr)).join("")}${animCard("autre","➕","Autre animal","",isSel("autre"),attr)}</div>`;
+    const grid=(attr,isSel)=>`<div class="grid tags animaux">${ANIMAUX.map(([id,e,l,c])=>animCard(id,e,l,c,isSel(id),attr)).join("")}${animCard("autre","➕","Autre animal ou idée","",isSel("autre"),attr)}</div>`;
     let body="", bar="";
     if(s.view==="carn1"){
       body=`${q("Pour le carnaval, quel animal veux-tu être ?","Choisis ton costume parmi les animaux du monde.","🎭")}${grid("data-canimal",id=>s.cAnimal===id)}
-        ${s.cAnimal==="autre"?`<div class="idea"><label for="cAnimalAutre">➕ Quel animal ?</label><small>Un grand peut l'écrire pour toi.</small><input id="cAnimalAutre" maxlength="120" value="${esc(s.cAnimalAutre)}" style="font-size:1.2rem"></div>`:""}`;
+        ${s.cAnimal==="autre"?`<div class="idea"><label for="cAnimalAutre">➕ Quel animal ou quelle idée de costume ?</label><small>Un grand peut l'écrire pour toi.</small><input id="cAnimalAutre" maxlength="120" value="${esc(s.cAnimalAutre)}" style="font-size:1.2rem"></div>`:""}`;
       bar=`<button class="back" data-go="hub">← Retour</button><button class="go" data-go="carn2" ${s.cAnimal?"":"disabled"}>Suivant →</button>`;
     }
     if(s.view==="carn2"){
