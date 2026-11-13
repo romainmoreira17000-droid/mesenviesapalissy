@@ -444,3 +444,4 @@ header.top .logo h1 small{display:block;font-size:.55em;font-weight:700;opacity:
 .tag.char{min-height:150px;gap:4px}
 .tag.char .pic{font-size:3.4rem}
 .tag.char .cont{font-size:.82rem;line-height:1.2;text-align:center}
+.chars .tag.char:last-child:nth-child(odd){grid-column:1/-1}
