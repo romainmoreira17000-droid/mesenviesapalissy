@@ -445,3 +445,7 @@ header.top .logo h1 small{display:block;font-size:.55em;font-weight:700;opacity:
 .tag.char .pic{font-size:3.4rem}
 .tag.char .cont{font-size:.82rem;line-height:1.2;text-align:center}
 .chars .tag.char:last-child:nth-child(odd){grid-column:1/-1}
+.tag.animal .pic.icon{width:96px;height:72px}
+.tag.char .pic.icon{width:110px;height:86px}
+.tag.animal .pic.icon img,.tag.char .pic.icon img{mix-blend-mode:normal}
+@media (max-width:420px){.tag.animal .pic.icon{width:84px;height:64px}.tag.char .pic.icon{width:92px;height:72px}}

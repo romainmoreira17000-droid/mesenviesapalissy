@@ -259,7 +259,7 @@ function render(){
     return;
   }
   if(["carn1","carn2"].includes(s.view)){
-    const animCard=(id,e,l,c,sel,attr)=>`<button class="big tag animal" ${attr}="${id}" aria-pressed="${sel}"><span class="badge" aria-hidden="true">✓</span><span class="pic" aria-hidden="true">${e}</span><span class="name">${esc(l)}</span>${c?`<span class="cont">${esc(c)}</span>`:""}</button>`;
+    const animCard=(id,e,l,c,sel,attr)=>`<button class="big tag animal" ${attr}="${id}" aria-pressed="${sel}"><span class="badge" aria-hidden="true">✓</span><span class="pic icon" aria-hidden="true"><img src="img/carn/${id}.webp" alt=""></span><span class="name">${esc(l)}</span>${c?`<span class="cont">${esc(c)}</span>`:""}</button>`;
     const grid=(attr,isSel)=>`<div class="grid tags animaux">${ANIMAUX.map(([id,e,l,c])=>animCard(id,e,l,c,isSel(id),attr)).join("")}${animCard("autre","➕","Autre animal ou idée","",isSel("autre"),attr)}</div>`;
     let body="", bar="";
     if(s.view==="carn1"){
@@ -269,7 +269,7 @@ function render(){
     }
     if(s.view==="carn2"){
       body=`${q("Pour le char, qu'est-ce que tu imagines ?","Choisis un monde d'animaux pour le char du carnaval.","🎉")}
-        <div class="grid chars">${CHARS.map(([id,e,l,x])=>`<button class="big tag char" data-cchar="${id}" aria-pressed="${s.cChar.includes(id)}"><span class="badge" aria-hidden="true">✓</span><span class="pic" aria-hidden="true">${e}</span><span class="name">${l}</span><span class="cont">${x}</span></button>`).join("")}</div>
+        <div class="grid chars">${CHARS.map(([id,e,l,x])=>`<button class="big tag char" data-cchar="${id}" aria-pressed="${s.cChar.includes(id)}"><span class="badge" aria-hidden="true">✓</span><span class="pic icon" aria-hidden="true"><img src="img/carn/char-${id}.webp" alt=""></span><span class="name">${l}</span><span class="cont">${x}</span></button>`).join("")}</div>
         <div class="idea"><label for="cCharAutre">✏️ Raconte ton idée pour le char <span class="muted" style="font-weight:400">(facultatif)</span></label><small>Un grand peut l'écrire pour toi.</small>
           <textarea id="cCharAutre" maxlength="120" placeholder="Par exemple : un grand lion qui rugit" style="min-height:80px">${esc(s.cCharAutre)}</textarea></div>`;
       bar=`<button class="back" data-go="carn1">← Retour</button><button class="go" id="sendCarn">Envoyer 🎉</button>`;
