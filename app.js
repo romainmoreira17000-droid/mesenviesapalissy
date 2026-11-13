@@ -53,10 +53,8 @@ function actIcon(a){
   return f?`<span class="pic icon" aria-hidden="true"><img src="img/act/${f}.webp" alt=""></span>`:`<span class="pic" aria-hidden="true">${esc(a.e)}</span>`;
 }
 /* ---------------- Carnaval « Les animaux du monde » ---------------- */
-const ANIMAUX=[["lion","🦁","Le lion","Afrique"],["girafe","🦒","La girafe","Afrique"],["elephant","🐘","L'éléphant","Afrique"],["zebre","🦓","Le zèbre","Afrique"],
-  ["singe","🐒","Le singe","Afrique"],["crocodile","🐊","Le crocodile","Afrique"],["panda","🐼","Le panda","Asie"],["tigre","🐯","Le tigre","Asie"],
-  ["kangourou","🦘","Le kangourou","Océanie"],["koala","🐨","Le koala","Océanie"],["perroquet","🦜","Le perroquet","Amérique"],["lama","🦙","Le lama","Amérique"],
-  ["pingouin","🐧","Le manchot","Pôle Sud"],["ourspolaire","🐻‍❄️","L'ours polaire","Pôle Nord"],["dauphin","🐬","Le dauphin","Océans"],["tortue","🐢","La tortue","Océans"]];
+const ANIMAUX=[["lion","🦁","Le lion","Afrique"],["girafe","🦒","La girafe","Afrique"],["elephant","🐘","L'éléphant","Afrique"],["singe","🐒","Le singe","Afrique"],["panda","🐼","Le panda","Asie"],["tigre","🐯","Le tigre","Asie"],
+  ["koala","🐨","Le koala","Océanie"],["perroquet","🦜","Le perroquet","Amérique"],["pingouin","🐧","Le manchot","Pôle Sud"],["ourspolaire","🐻‍❄️","L'ours polaire","Pôle Nord"]];
 const COSTUMES=[["centre","✂️","Le fabriquer au centre"],["maison","🏠","L'apporter de la maison"],["maquillage","🎨","Du maquillage"],["masque","🎭","Un masque"],["sais","🤷","Je ne sais pas encore"]];
 const CHARS=[["savane","🦁","La savane africaine","Lions, girafes, éléphants, zèbres"],["jungle","🦜","La jungle tropicale","Singes, perroquets, tigres, crocodiles"],
   ["banquise","🐧","La banquise","Manchots, ours polaires, phoques"],["ocean","🐬","Le monde sous la mer","Dauphins, tortues, poissons, baleines"],["tous","🌍","Tous les animaux du monde","Un peu de tout : savane, jungle, banquise et monde sous la mer"]];
