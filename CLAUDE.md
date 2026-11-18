@@ -39,6 +39,8 @@ RLS activée partout. Règle générale : `anon` **insère** seulement, les anim
 
 Fonctions : `is_animateur`, `comptes_en_attente`, `valider_animateur`, `refuser_compte`, `nettoyage`, `alerte_enfant_veut_parler` (notif ntfy sans prénom ni émotion).
 
+Connexion avec le compte Suivi Palissy : bouton « Se connecter avec Suivi Palissy » → Suivi Palissy `#ma-parole` (ou `#ma-parole-emotions`) → fonction edge `connexion-suivi` (ici, `verify_jwt` false : vérifie le jeton auprès de Suivi Palissy et `profils.statut = 'actif'`, crée un compte miroir `suivi-<id>@palissy.invalid`, l'inscrit dans `animateurs` avec `palissy_id`, `nom`, `verifie_le`, rend une clé de lien magique) → retour ici `#suivi=<clé>[&emo]` (`verifyOtp`). `is_animateur()` : un compte miroir n'est animateur que 30 jours après `verifie_le` (`supabase-connexion-suivi.sql`). Code : `supabase/functions/connexion-suivi/index.ts`.
+
 Données personnelles : prénom d'un enfant seulement s'il veut parler à un animateur (effacé à « C'est fait », 7 jours max).
 Conservation : émotions et coordonnées des familles 3 mois, le reste 13 mois (`supabase-nettoyage.sql`).
 
