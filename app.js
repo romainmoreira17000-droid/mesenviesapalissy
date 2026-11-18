@@ -411,10 +411,13 @@ function renderLogin(app){
   const signup=acc.mode==="signup";
   app.innerHTML=`<div class="panel"><form class="login" id="loginForm">
     <h2>${signup?"Créer mon compte animateur":"Espace animateur"}</h2>
-    <p class="muted" style="margin:0">${signup?"Après la création, un animateur déjà inscrit devra valider ton compte (onglet Aide).":"Connecte-toi avec ton compte animateur."}</p>
+    ${signup?`<p class="muted" style="margin:0">Après la création, un animateur déjà inscrit devra valider ton compte (onglet Aide).</p>`:`
+    <label class="remember" for="lremember"><input type="checkbox" id="lremember" name="lremember" ${remember?"checked":""}> <span>Rester connecté sur cet appareil<br><small class="muted">Sur votre téléphone perso. Pas sur la tablette des enfants.</small></span></label>
+    <button class="btn primary suivi-btn" type="button" id="suiviLogin" ${adm.busy?"disabled":""}>🔗 Se connecter avec Suivi Palissy</button>
+    <p class="muted" style="margin:0">Pour tous les animateurs qui ont un compte actif sur Suivi Palissy : rien à créer, rien à faire valider.</p>
+    <div class="ou"><span>ou avec un compte Ma parole compte !</span></div>`}
     <label for="lemail">Adresse e-mail<input id="lemail" name="lemail" type="email" autocomplete="username" required></label>
     <label for="lpass">Mot de passe${signup?" (8 caractères minimum)":""}<input id="lpass" name="lpass" type="password" minlength="${signup?8:1}" autocomplete="${signup?"new-password":"current-password"}" required></label>
-    ${signup?"":`<label class="remember" for="lremember"><input type="checkbox" id="lremember" name="lremember" ${remember?"checked":""}> <span>Rester connecté sur cet appareil<br><small class="muted">Sur votre téléphone perso. Pas sur la tablette des enfants.</small></span></label>`}
     <div class="err" role="alert">${esc(adm.err)}</div>
     ${acc.msg?`<div class="banner">${esc(acc.msg)}</div>`:""}
     <button class="btn primary" type="submit" ${adm.busy?"disabled":""}>${adm.busy?"Patiente…":signup?"Créer mon compte":"Se connecter"}</button>
@@ -441,7 +444,7 @@ function renderLogin(app){
 }
 async function loadTeam(){
   if(!sb||!session) return;
-  const [p,t,n]=await Promise.all([sb.rpc("comptes_en_attente"),sb.from("animateurs").select("user_id,email,created_at").order("created_at"),
+  const [p,t,n]=await Promise.all([sb.rpc("comptes_en_attente"),sb.from("animateurs").select("user_id,email,nom,palissy_id,created_at").order("created_at"),
     sb.from("alertes_config").select("ntfy_topic,actif").eq("id",1).maybeSingle()]);
   acc.pending=p.data||[]; acc.team=t.data||[]; acc.ntfy=n.error?null:(n.data||null);
   if(s.view==="adm"&&adm.tab==="set") render();
@@ -831,7 +834,7 @@ function renderSettings(){
   <div class="panel"><h3>👥 Comptes animateurs</h3>
     <p class="muted" style="margin:0">Un collègue crée son compte avec « Pas encore de compte ? » sur l'écran de connexion, puis tu le valides ici. Seuls les comptes validés voient les réponses.</p>
     ${acc.pending.length?`<div class="actlist" style="flex-direction:column;align-items:stretch">${acc.pending.map(u=>`<div class="confirm" style="border-color:var(--peri)"><span style="flex:1;min-width:0;overflow-wrap:anywhere">⏳ <b>${esc(u.email)}</b> <small class="muted">demandé le ${fdate(u.created_at)}</small></span><button class="btn primary" data-valider="${esc(u.id)}">Valider</button><button class="btn danger" data-refuser="${esc(u.id)}">Refuser</button></div>`).join("")}</div>`:`<div class="muted">Aucun compte en attente.</div>`}
-    <div><b>Validés :</b> ${acc.team.map(u=>esc(u.email)).join(", ")||"–"}</div></div>
+    <div><b>Validés :</b> ${acc.team.map(u=>esc(u.palissy_id?(u.nom||"Compte")+" (Suivi Palissy)":u.email)).join(", ")||"–"}</div></div>
   <div class="panel"><h3>🔑 Changer mon mot de passe</h3>
     <div class="addrow"><input id="newpass" type="password" minlength="8" autocomplete="new-password" placeholder="Nouveau mot de passe (8 caractères min.)" aria-label="Nouveau mot de passe" style="flex:1;min-width:0"><button class="btn primary" id="savePass">Changer</button></div></div>
   <div class="panel"><h3>Comment l'utiliser</h3><ol style="margin:0;padding-left:1.2rem;display:flex;flex-direction:column;gap:6px">
@@ -887,6 +890,7 @@ document.addEventListener("click",e=>{
   if(t.id==="logout"){ logout(); go("accueil"); toast("Déconnecté."); return; }
   if(t.id==="refresh"){ loadAll(); loadTeam(); return; }
   if(t.id==="exportCsv"){ exportTab(); return; }
+  if(t.id==="suiviLogin"){ allerVersSuivi(); return; }
   if(t.id==="switchMode"){ acc.mode=acc.mode==="signup"?"login":"signup"; adm.err=""; acc.msg=""; render(); return; }
   if(d.valider){ sb.rpc("valider_animateur",{uid:d.valider}).then(({error})=>{toast(error?"Validation impossible.":"Compte validé.");loadTeam();}); return; }
   if(d.refuser){ sb.rpc("refuser_compte",{uid:d.refuser}).then(({error})=>{toast(error?"Refus impossible.":"Compte supprimé.");loadTeam();}); return; }
@@ -974,11 +978,33 @@ async function keepAwake(){ try{ if("wakeLock" in navigator&&document.visibility
 document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible") keepAwake(); });
 document.addEventListener("pointerdown",keepAwake,{passive:true});
 keepAwake(); majFsBtn();
+/* Connexion avec le compte Suivi Palissy : on part sur Suivi Palissy (#ma-parole), qui vérifie
+   le compte et revient ici avec une clé à usage unique (#suivi=<clé>). */
+const SUIVI_URL="https://suivieheuresagentpalissy.netlify.app/";
+function allerVersSuivi(){
+  const rem=!!$("#lremember")?.checked;
+  try{ sessionStorage.setItem("envies-suivi",JSON.stringify({remember:rem,emo:adm.tab==="emo"})); }catch(e){}
+  location.assign(SUIVI_URL+"#ma-parole"+(adm.tab==="emo"?"-emotions":""));
+}
+const retourSuivi=/^#suivi=([0-9a-f]{20,100})(&emo)?$/.exec(location.hash);
+if(retourSuivi){
+  try{ history.replaceState(null,"",location.pathname+location.search); }catch(e){}
+  let att={}; try{ att=JSON.parse(sessionStorage.getItem("envies-suivi")||"{}"); sessionStorage.removeItem("envies-suivi"); }catch(e){}
+  setRemember(!!att.remember); if(retourSuivi[2]||att.emo) adm.tab="emo";
+  s.view="adm-login"; adm.busy=true; adm.err=""; acc.msg=""; render();
+  (async()=>{
+    const {data,error}=sb?await sb.auth.verifyOtp({token_hash:retourSuivi[1],type:"magiclink"}):{error:true};
+    const ok=!error&&data?.session?(await sb.rpc("is_animateur")).data===true:false;
+    adm.busy=false;
+    if(!ok){ try{await sb?.auth.signOut();}catch(e){} setRemember(false); adm.err="Connexion avec Suivi Palissy impossible (lien expiré ou déjà utilisé). Réessaie."; render(); return; }
+    session=data.session; s.view="adm"; nettoyer().then(loadAll); loadTeam(); startRefresh(); render();
+  })();
+}
 /* Arrivée depuis l'alerte de Suivi Palissy (…/#emotions) : onglet Émotions de l'espace animateur. */
 const versEmotions=location.hash==="#emotions";
 if(versEmotions){ try{ history.replaceState(null,"",location.pathname+location.search); }catch(e){} adm.tab="emo"; if(!(sb&&remember)){ s.view="adm-login"; render(); } }
 /* connexion gardée (« Rester connecté ») : on la reprend sans redemander le mot de passe */
-if(sb&&remember) sb.auth.getSession().then(async({data})=>{
+if(sb&&remember&&!retourSuivi) sb.auth.getSession().then(async({data})=>{
   if(!data?.session){ setRemember(false); if(versEmotions){ s.view="adm-login"; render(); } return; }
   const {data:ok}=await sb.rpc("is_animateur");
   if(ok===true){ session=data.session; nettoyer(); startRefresh(); if(versEmotions){ s.view="adm"; loadAll(); loadTeam(); } render(); }
