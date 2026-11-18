@@ -824,19 +824,9 @@ function renderSettings(){
   <div class="panel"><h3>🔔 Alertes « un enfant veut parler »</h3>
     <p class="muted" style="margin:0">Tant que l'espace animateur est ouvert sur cet appareil, il vérifie toutes les 15 secondes : son, vibration et notification dès qu'un enfant demande un animateur.</p>
     <div class="tabs"><button class="btn primary" id="notifOn">Activer les notifications</button><button class="btn" id="notifTest">Tester l'alerte</button></div>
-    <div class="ntfy">${acc.ntfy?.ntfy_topic?(()=>{const url="https://ntfy.sh/"+acc.ntfy.ntfy_topic;let qr="";
-      try{const q=qrcode(0,"M");q.addData(url);q.make();qr=q.createSvgTag({cellSize:5,margin:2,scalable:true});}catch(e){}
-      return `<b style="font-size:1.1rem">📱 Recevoir l'alerte sur son téléphone, même appli fermée (facultatif)</b>
-      <div class="ntfy-steps"><div class="qrbox">${qr}</div><ol>
-        <li><b>Installez l'appli gratuite « ntfy »</b> sur votre téléphone (Play Store ou App Store).</li>
-        <li><b>Scannez ce QR code</b> avec l'appareil photo du téléphone (depuis un autre écran), puis touchez <b>« S'abonner »</b> (Subscribe).</li></ol></div>
-      <div class="ntfy-phone"><b>Vous êtes déjà sur votre téléphone ?</b> Après avoir installé ntfy :
-        <div class="tabs"><a class="btn primary" href="ntfy://ntfy.sh/${esc(acc.ntfy.ntfy_topic)}">📲 S'abonner depuis ce téléphone</a></div>
-        <small class="muted">Si le bouton ne fait rien : touchez <b>Copier le nom du canal</b>, ouvrez ntfy, touchez <b>+</b>, collez le nom, puis <b>S'abonner</b>.</small></div>
-      <div class="tabs"><button class="btn primary" id="ntfyTest" data-topic="${esc(acc.ntfy.ntfy_topic)}">Envoyer une alerte de test</button>
-        <button class="btn" id="copyTopic" data-url="${esc(acc.ntfy.ntfy_topic)}">Copier le nom du canal</button></div>
-      <small class="muted">Ce QR code est réservé à l'équipe. L'alerte dit seulement « Un enfant de CP demande un animateur » : ni prénom, ni émotion.</small>`;})()
-      :`<small class="muted">📱 Alertes sur téléphone : pas encore activées.</small>`}</div>
+    <div class="ntfy"><b style="font-size:1.1rem">📱 Sur votre téléphone, même appli fermée : dans Suivi Palissy</b>
+      <span>Les animateurs reçoivent l'alerte <b>« 🙋 Un enfant veut parler »</b> dans les notifications de <b>Suivi Palissy</b>. La toucher ouvre directement l'onglet Émotions ici.</span>
+      <small class="muted">Il suffit que les notifications de Suivi Palissy soient activées sur le téléphone. L'alerte dit seulement la classe (« Un enfant de CP… ») : ni prénom, ni émotion.</small></div>
     <small class="muted">${"Notification" in window?{granted:"✅ Notifications autorisées sur cet appareil.",denied:"⛔ Notifications bloquées : autorisez-les dans les réglages du navigateur pour ce site.",default:"Notifications pas encore autorisées sur cet appareil."}[Notification.permission]:"Ce navigateur ne gère pas les notifications : le son et le bandeau rouge restent actifs."} Sur iPhone/iPad, ajoutez d'abord l'appli à l'écran d'accueil.</small></div>
   <div class="panel"><h3>👥 Comptes animateurs</h3>
     <p class="muted" style="margin:0">Un collègue crée son compte avec « Pas encore de compte ? » sur l'écran de connexion, puis tu le valides ici. Seuls les comptes validés voient les réponses.</p>
@@ -984,9 +974,13 @@ async function keepAwake(){ try{ if("wakeLock" in navigator&&document.visibility
 document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible") keepAwake(); });
 document.addEventListener("pointerdown",keepAwake,{passive:true});
 keepAwake(); majFsBtn();
+/* Arrivée depuis l'alerte de Suivi Palissy (…/#emotions) : onglet Émotions de l'espace animateur. */
+const versEmotions=location.hash==="#emotions";
+if(versEmotions){ try{ history.replaceState(null,"",location.pathname+location.search); }catch(e){} adm.tab="emo"; if(!(sb&&remember)){ s.view="adm-login"; render(); } }
 /* connexion gardée (« Rester connecté ») : on la reprend sans redemander le mot de passe */
 if(sb&&remember) sb.auth.getSession().then(async({data})=>{
-  if(!data?.session){ setRemember(false); return; }
+  if(!data?.session){ setRemember(false); if(versEmotions){ s.view="adm-login"; render(); } return; }
   const {data:ok}=await sb.rpc("is_animateur");
-  if(ok===true){ session=data.session; nettoyer(); startRefresh(); render(); } else { await sb.auth.signOut(); setRemember(false); }
+  if(ok===true){ session=data.session; nettoyer(); startRefresh(); if(versEmotions){ s.view="adm"; loadAll(); loadTeam(); } render(); }
+  else { await sb.auth.signOut(); setRemember(false); if(versEmotions){ s.view="adm-login"; render(); } }
 }).catch(()=>{});
